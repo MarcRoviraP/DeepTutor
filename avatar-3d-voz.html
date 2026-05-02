@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Virtual 3D</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #080810;
+  --surface: #0f0f1a;
+  --s2:      #161624;
+  --s3:      #1e1e30;
+  --border:  rgba(110,90,255,0.15);
+  --accent:  #6e5aff;
+  --accent2: #b48cff;
+  --text:    #e4e0ff;
+  --muted:   #6a6890;
+  --danger:  #ff5a7a;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; }
+body { display: grid; grid-template-columns: 1fr 320px; }
+
+/* ─── ESCENA ───────────────────────────────────── */
+#scene-wrap {
+  position: relative; overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 50% 70%, #1a0a3e 0%, transparent 70%), var(--bg);
+}
+#scene-wrap::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: linear-gradient(rgba(110,90,255,.04) 1px,transparent 1px), linear-gradient(90deg,rgba(110,90,255,.04) 1px,transparent 1px);
+  background-size: 56px 56px;
+}
+canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; z-index: 2; }
+
+.corner { position: absolute; z-index: 10; width: 20px; height: 20px; opacity: .45; }
+.corner-tl { top:14px; left:14px;   border-top:1.5px solid var(--accent); border-left:1.5px solid var(--accent); }
+.corner-tr { top:14px; right:14px;  border-top:1.5px solid var(--accent); border-right:1.5px solid var(--accent); }
+.corner-bl { bottom:14px; left:14px;  border-bottom:1.5px solid var(--accent); border-left:1.5px solid var(--accent); }
+.corner-br { bottom:14px; right:14px; border-bottom:1.5px solid var(--accent); border-right:1.5px solid var(--accent); }
+
+#badge {
+  position: absolute; top:18px; left:50%; transform:translateX(-50%); z-index:10;
+  display:flex; align-items:center; gap:7px; padding:5px 14px; border-radius:999px;
+  background:rgba(8,8,16,.85); border:1px solid var(--border);
+  font-size:11px; font-family:'DM Mono',monospace; color:var(--muted);
+  backdrop-filter:blur(10px); transition:all .4s;
+}
+#badge.on { color:var(--accent2); border-color:rgba(180,140,255,.4); }
+#dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition:background .3s; }
+#badge.on #dot { background:var(--accent2); animation:pulse .7s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(1.5)} }
+
+#viz {
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:10;
+  display:flex; align-items:flex-end; gap:3px; height:32px; opacity:0; transition:opacity .4s;
+}
+#viz.on { opacity:1; }
+.bar { width:4px; background:linear-gradient(to top,var(--accent),var(--accent2)); border-radius:2px; min-height:3px; }
+
+#loading {
+  position:absolute; inset:0; z-index:20;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  background:var(--bg); transition:opacity .5s;
+}
+.spinner { width:36px; height:36px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+#loading p { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
+#minfo { position:absolute; bottom:14px; right:16px; z-index:10; font-size:9px; color:rgba(110,90,255,.22); font-family:'DM Mono',monospace; text-align:right; line-height:1.7; }
+
+/* ─── PANEL ─────────────────────────────────────── */
+#panel { background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+
+#ph { padding:22px 20px 16px; border-bottom:1px solid var(--border); }
+#ph h1 { font-size:18px; font-weight:800; letter-spacing:-.02em; }
+#ph p  { font-size:11px; color:var(--muted); margin-top:3px; font-family:'DM Mono',monospace; }
+
+#acard {
+  margin:14px 16px 0; padding:12px 14px;
+  background:var(--s2); border:1px solid var(--border); border-radius:10px;
+  display:flex; align-items:center; gap:10px;
+}
+#aicon { width:36px; height:36px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:16px; }
+#acard strong { display:block; font-size:13px; }
+#acard span   { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+#atag { margin-left:auto; font-size:10px; padding:2px 8px; border-radius:999px; background:rgba(110,90,255,.12); color:var(--accent2); font-family:'DM Mono',monospace; border:1px solid rgba(110,90,255,.25); transition:all .3s; }
+#atag.on { background:rgba(180,140,255,.18); border-color:rgba(180,140,255,.5); }
+
+#log { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+#log::-webkit-scrollbar { width:3px; }
+#log::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.msg { padding:9px 12px; border-radius:9px; font-size:12.5px; line-height:1.55; animation:fadeup .25s ease; white-space:pre-wrap; }
+@keyframes fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.msg-av   { background:rgba(110,90,255,.1); border:1px solid rgba(110,90,255,.2); align-self:flex-start; border-bottom-left-radius:2px; }
+.msg-user { background:var(--s2); border:1px solid var(--border); color:var(--muted); align-self:flex-end; border-bottom-right-radius:2px; max-width:92%; }
+.msg-sys  { background:rgba(255,90,122,.07); border:1px solid rgba(255,90,122,.2); color:#ff8a9e; font-size:11px; font-family:'DM Mono',monospace; border-radius:7px; }
+
+#cfg { padding:12px 16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:7px; }
+.row { display:flex; align-items:center; gap:8px; }
+.lbl { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; min-width:52px; }
+
+input[type=text], input[type=password], select {
+  flex:1; background:var(--s3); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 9px; font-size:11px; font-family:'DM Mono',monospace;
+  outline:none; transition:border-color .2s; appearance:none;
+}
+input[type=text]:focus, input[type=password]:focus, select:focus { border-color:var(--accent); }
+input[type=password]::placeholder, input[type=text]::placeholder { color:var(--muted); }
+
+input[type=range] {
+  flex:1; height:3px; background:var(--border); border:none; border-radius:2px;
+  outline:none; cursor:pointer; appearance:none; padding:0;
+}
+input[type=range]::-webkit-slider-thumb { appearance:none; width:13px; height:13px; border-radius:50%; background:var(--accent); cursor:pointer; }
+.rv { font-size:10px; color:var(--accent2); font-family:'DM Mono',monospace; min-width:26px; text-align:right; }
+.hint { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; line-height:1.5; }
+.hint a { color:var(--accent2); text-decoration:none; }
+
+#ia { padding:12px 16px 16px; }
+textarea {
+  width:100%; background:var(--s3); border:1px solid var(--border); border-radius:9px;
+  padding:10px 12px; color:var(--text); font-size:12.5px; font-family:'Syne',sans-serif;
+  outline:none; resize:none; min-height:66px; line-height:1.5; transition:border-color .2s;
+}
+textarea:focus { border-color:var(--accent); }
+textarea::placeholder { color:var(--muted); }
+
+#btnrow { display:flex; gap:7px; margin-top:8px; }
+#btn-go {
+  flex:1; padding:10px; border:none; border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff; font-size:12.5px; font-weight:700; font-family:'Syne',sans-serif;
+  cursor:pointer; transition:opacity .2s,transform .1s; letter-spacing:.02em;
+}
+#btn-go:hover { opacity:.88; }
+#btn-go:active { transform:scale(.97); }
+#btn-go:disabled { opacity:.35; cursor:not-allowed; }
+#btn-stop {
+  padding:10px 13px; background:transparent; border:1px solid var(--border);
+  border-radius:7px; color:var(--muted); font-size:13px; cursor:pointer;
+  font-family:'Syne',sans-serif; transition:all .2s;
+}
+#btn-stop:hover { border-color:rgba(255,90,122,.5); color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div id="scene-wrap">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div id="badge"><div id="dot"></div><span id="badge-txt">en espera</span></div>
+  <div id="loading"><div class="spinner"></div><p id="load-txt">iniciando escena 3D...</p></div>
+  <canvas id="c"></canvas>
+  <div id="viz">
+    <div class="bar" style="height:5px"></div><div class="bar" style="height:10px"></div>
+    <div class="bar" style="height:18px"></div><div class="bar" style="height:26px"></div>
+    <div class="bar" style="height:30px"></div><div class="bar" style="height:26px"></div>
+    <div class="bar" style="height:18px"></div><div class="bar" style="height:10px"></div>
+    <div class="bar" style="height:5px"></div>
+  </div>
+  <div id="minfo">three.js r160<br>webgl2</div>
+</div>
+
+<div id="panel">
+  <div id="ph">
+    <h1>Avatar Virtual</h1>
+    <p>// 3D · ElevenLabs TTS · animación reactiva</p>
+  </div>
+  <div id="acard">
+    <div id="aicon">🤖</div>
+    <div><strong>ARIA-01</strong><span>asistente virtual</span></div>
+    <div id="atag">inactivo</div>
+  </div>
+  <div id="log">
+    <div class="msg msg-av">Hola. Introduce tu API key de ElevenLabs y escribe algo para que lo diga en voz alta.</div>
+  </div>
+  <div id="cfg">
+    <div class="row">
+      <span class="lbl">api key</span>
+      <input type="password" id="apikey" placeholder="sk_xxxxxxxxxxxxxxxx">
+    </div>
+    <div class="row">
+      <span class="lbl">voz</span>
+      <select id="voice">
+        <option value="EXAVITQu4vr4xnSDxMaL">Sarah — ES/EN femenina</option>
+        <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — EN masculina</option>
+        <option value="XB0fDUnXU5powFXDhCwa">Charlotte — ES/EN femenina</option>
+        <option value="onwK4e9ZLuTAKqWW03F9">Daniel — EN masculina</option>
+        <option value="pNInz6obpgDQGcFmaJgB">Adam — EN masculina</option>
+        <option value="custom">— ID personalizado —</option>
+      </select>
+    </div>
+    <div class="row" id="row-custom" style="display:none">
+      <span class="lbl">voice id</span>
+      <input type="text" id="voice-custom" placeholder="pNInz6obpgDQGcFmaJgB">
+    </div>
+    <div class="row">
+      <span class="lbl">veloc.</span>
+      <input type="range" id="sl-speed" min="0.7" max="1.3" step="0.05" value="1">
+      <span class="rv" id="lbl-speed">1.00</span>
+    </div>
+    <div class="row">
+      <span class="lbl">escala</span>
+      <input type="range" id="sl-scale" min="0.01" max="5" step="0.01" value="0.05">
+      <span class="rv" id="lbl-scale">0.05x</span>
+    </div>
+    <div class="row">
+      <span class="lbl">altura y</span>
+      <input type="range" id="sl-y" min="-3" max="3" step="0.05" value="0.55">
+      <span class="rv" id="lbl-y">0.55</span>
+    </div>
+    <div class="row">
+      <span class="lbl">distancia x</span>
+      <input type="range" id="sl-x" min="-3" max="3" step="0.05" value="0">
+      <span class="rv" id="lbl-x">0.00</span>
+    </div>
+    <div class="row">
+      <span class="lbl">distancia z</span>
+      <input type="range" id="sl-z" min="-5" max="5" step="0.05" value="0.05">
+      <span class="rv" id="lbl-z">0.05</span>
+    </div>
+    <p class="hint">Gratis en <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a> · 10k chars/mes sin tarjeta</p>
+  </div>
+  <div id="ia">
+    <textarea id="txt" placeholder="Escribe el texto que quieres que diga el avatar..."></textarea>
+    <div id="btnrow">
+      <button id="btn-go">▶ Hablar</button>
+      <button id="btn-stop">■ Stop</button>
+    </div>
+  </div>
+</div>
+
+<!-- importmap idéntico al del código de referencia -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<!-- THREE.JS — módulo ES igual que Gemini -->
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const wrap    = document.getElementById('scene-wrap');
+const canvas  = document.getElementById('c');
+const loadTxt = document.getElementById('load-txt');
+
+const scene    = new THREE.Scene();
+const clock    = new THREE.Clock();
+const camera   = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.01, 100);
+camera.position.set(0, 1.55, 2.6);
+camera.lookAt(0, 1.4, 0);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 1.4, 0);
+controls.minDistance = 1;
+controls.maxDistance = 6;
+
+scene.add(new THREE.AmbientLight(0x9977ff, 0.7));
+const dirL = new THREE.DirectionalLight(0xffffff, 1.4);
+dirL.position.set(2, 4, 3); dirL.castShadow = true; scene.add(dirL);
+const fillL = new THREE.DirectionalLight(0xc084fc, 0.5);
+fillL.position.set(-2, 2, -1); scene.add(fillL);
+const rimL = new THREE.PointLight(0x6e5aff, 2, 8);
+rimL.position.set(0, 2.5, -2); scene.add(rimL);
+
+let avatarGroup = null;
+let hablando    = false;
+let tHabla      = 0;
+let mixer       = null;
+let idleAction  = null;
+let talkAction  = null;
+
+function crearAvatar() {
+  const g = new THREE.Group();
+  g.userData.baseY = 0;
+  const mC = new THREE.MeshPhongMaterial({ color:0x2a1a5e, emissive:0x110830, shininess:80, specular:0x6e5aff });
+  const mF = new THREE.MeshPhongMaterial({ color:0x3a2a7e, emissive:0x190a4a, shininess:120 });
+  const mO = new THREE.MeshPhongMaterial({ color:0xb48cff, emissive:0x6e5aff, shininess:200 });
+  const mB = new THREE.MeshPhongMaterial({ color:0x6e5aff, emissive:0x3a1090 });
+  const mR = new THREE.MeshPhongMaterial({ color:0x6e5aff, emissive:0x4a2acc, transparent:true, opacity:.65 });
+
+  const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,.65,12), mC);
+  cuerpo.position.set(0,.9,0); g.add(cuerpo);
+  [-.32,.32].forEach(x => { const h=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),mC); h.position.set(x,1.15,0); g.add(h); });
+
+  const cuello = new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.16,10), mF);
+  cuello.position.set(0,1.32,0); g.add(cuello);
+
+  const cabeza = new THREE.Mesh(new THREE.SphereGeometry(.26,16,16), mF);
+  cabeza.position.set(0,1.66,0); g.add(cabeza); g.userData.cabeza = cabeza;
+
+  [-.09,.09].forEach(x => { const o=new THREE.Mesh(new THREE.SphereGeometry(.04,8,8),mO); o.position.set(x,1.69,.23); g.add(o); });
+
+  const boca = new THREE.Mesh(new THREE.TorusGeometry(.065,.012,8,16,Math.PI), mB);
+  boca.position.set(0,1.56,.24); boca.rotation.z=Math.PI; g.add(boca); g.userData.boca = boca;
+
+  for(let i=0;i<3;i++){
+    const r=new THREE.Mesh(new THREE.TorusGeometry(.18,.007,6,24),mR.clone());
+    r.position.set(0,.78+i*.2,0); r.rotation.x=Math.PI/2; g.add(r); g.userData['r'+i]=r;
+  }
+
+  const pGeo = new THREE.BufferGeometry();
+  const pos=[]; for(let i=0;i<60;i++) pos.push((Math.random()-.5)*1.4,.5+Math.random()*1.6,(Math.random()-.5)*1.4);
+  pGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  const pts=new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xb48cff,size:.018,transparent:true,opacity:.55}));
+  g.add(pts); g.userData.pts=pts;
+
+  const suelo=new THREE.Mesh(new THREE.CircleGeometry(.9,32),new THREE.MeshPhongMaterial({color:0x6e5aff,emissive:0x3a1080,transparent:true,opacity:.15,side:THREE.DoubleSide}));
+  suelo.rotation.x=-Math.PI/2; suelo.position.y=.54; scene.add(suelo);
+
+  scene.add(g); avatarGroup=g;
+}
+
+// Cambia GLB_URL a tu archivo para usar un modelo real
+const GLB_URL = 'sketchbot.glb';
+function cargarGLB() {
+  if (!GLB_URL) return;
+  new GLTFLoader().load(GLB_URL, gltf => {
+    scene.remove(avatarGroup);
+    const m=gltf.scene;
+    const box=new THREE.Box3().setFromObject(m);
+    const size=box.getSize(new THREE.Vector3());
+    // Normalizamos la altura del modelo a 1.2 unidades para que encaje perfecto en la cámara
+    const sc=1.2/size.y;
+    m.position.sub(box.getCenter(new THREE.Vector3()).multiplyScalar(sc));
+    scene.add(m); avatarGroup=m;
+
+    m.userData.initialSc = sc;
+
+    // Leer valores por defecto de la UI
+    const defScale = parseFloat(document.getElementById('sl-scale').value);
+    const defY = parseFloat(document.getElementById('sl-y').value);
+    const defX = parseFloat(document.getElementById('sl-x').value);
+    const defZ = parseFloat(document.getElementById('sl-z').value);
+
+    m.userData.baseScale = sc * defScale;
+    m.scale.setScalar(m.userData.baseScale);
+    
+    m.userData.baseY = defY;
+    m.position.y = defY;
+    
+    m.userData.baseX = defX;
+    m.position.x = defX;
+
+    m.userData.baseZ = defZ;
+    m.position.z = defZ;
+
+    if(gltf.animations.length){ 
+      mixer = new THREE.AnimationMixer(m); 
+      idleAction = mixer.clipAction(gltf.animations[0]);
+      idleAction.play();
+      if(gltf.animations.length > 1) {
+        talkAction = mixer.clipAction(gltf.animations[1]);
+      }
+    }
+    
+    // Quitar la pantalla de carga con éxito
+    setTimeout(()=>{ const ld=document.getElementById('loading'); if(ld) { ld.style.opacity='0'; setTimeout(()=>ld.remove(),500); } }, 200);
+
+  }, xhr=>{ loadTxt.textContent=`GLB ${Math.round(xhr.loaded/xhr.total*100)}%`; }, err=>{
+    console.error('GLB Error:', err);
+    loadTxt.textContent = '❌ Error de CORS. ¡Iniciá el servidor local!';
+    setTimeout(()=> { const ld = document.getElementById('loading'); if(ld) { ld.style.opacity='0'; setTimeout(()=>ld.remove(),500); } }, 4000);
+  });
+}
+
+crearAvatar();
+cargarGLB();
+
+// El loader se quita solo si GLB_URL es null. Si se intenta cargar GLB, el loader se quita al terminar o fallar arriba.
+if (!GLB_URL) setTimeout(()=>{ const ld=document.getElementById('loading'); if(ld) { ld.style.opacity='0'; setTimeout(()=>ld.remove(),500); } },500);
+
+window.addEventListener('resize',()=>{ camera.aspect=wrap.clientWidth/wrap.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(wrap.clientWidth,wrap.clientHeight); });
+
+(function animate(){
+  requestAnimationFrame(animate);
+  const dt=clock.getDelta(), t=clock.getElapsedTime();
+  controls.update();
+  if (mixer) mixer.update(dt);
+
+  if(avatarGroup){
+    const baseY = avatarGroup.userData.baseY !== undefined ? avatarGroup.userData.baseY : 0;
+    
+    // Animación Idle más obvia (rotación y flotación)
+    avatarGroup.rotation.y = Math.sin(t * 0.8) * 0.25; 
+    avatarGroup.position.y = baseY + Math.sin(t * 1.5) * 0.06;
+
+    if(hablando){
+      tHabla+=dt;
+      if(talkAction && idleAction) {
+         if(!talkAction.isRunning()) { talkAction.play(); idleAction.stop(); }
+      }
+      if(avatarGroup.userData.cabeza){ avatarGroup.userData.cabeza.rotation.x=Math.sin(tHabla*9)*.05; avatarGroup.userData.cabeza.rotation.z=Math.sin(tHabla*5.5)*.03; }
+      if(avatarGroup.userData.boca){ avatarGroup.userData.boca.scale.y=1+Math.abs(Math.sin(tHabla*13))*.7; }
+      if(!talkAction && avatarGroup.userData.baseScale) {
+         // Squash & Stretch exagerado
+         avatarGroup.rotation.z = Math.sin(tHabla * 15) * 0.08;
+         avatarGroup.scale.y = avatarGroup.userData.baseScale * (1 + Math.abs(Math.sin(tHabla * 15)) * 0.15);
+         avatarGroup.scale.x = avatarGroup.userData.baseScale * (1 - Math.abs(Math.sin(tHabla * 15)) * 0.05);
+         avatarGroup.scale.z = avatarGroup.userData.baseScale * (1 - Math.abs(Math.sin(tHabla * 15)) * 0.05);
+      }
+      for(let i=0;i<3;i++){ const r=avatarGroup.userData['r'+i]; if(r){r.material.opacity=.3+Math.abs(Math.sin(tHabla*5+i))*.6; r.scale.setScalar(1+Math.sin(tHabla*4+i*1.2)*.09);} }
+    } else {
+      if(talkAction && idleAction) {
+         if(talkAction.isRunning()) { talkAction.stop(); idleAction.play(); }
+      }
+      if(avatarGroup.userData.cabeza){ avatarGroup.userData.cabeza.rotation.x*=.88; avatarGroup.userData.cabeza.rotation.z*=.88; }
+      if(avatarGroup.userData.boca){ avatarGroup.userData.boca.scale.y+=(1-avatarGroup.userData.boca.scale.y)*.12; }
+      if(!talkAction && avatarGroup.userData.baseScale) {
+         // Recuperar forma normal
+         avatarGroup.rotation.z *= 0.88;
+         avatarGroup.scale.y += (avatarGroup.userData.baseScale - avatarGroup.scale.y) * 0.2;
+         avatarGroup.scale.x += (avatarGroup.userData.baseScale - avatarGroup.scale.x) * 0.2;
+         avatarGroup.scale.z += (avatarGroup.userData.baseScale - avatarGroup.scale.z) * 0.2;
+      }
+      for(let i=0;i<3;i++){ const r=avatarGroup.userData['r'+i]; if(r){r.material.opacity+=(.5-r.material.opacity)*.05; r.scale.setScalar(1);} }
+    }
+    if(avatarGroup.userData.pts) avatarGroup.userData.pts.rotation.y=t*.18;
+  }
+  if(hablando){ document.querySelectorAll('.bar').forEach((b,i)=>{ b.style.height=(3+Math.abs(Math.sin(t*(4+i*1.4)+i))*27)+'px'; }); }
+  renderer.render(scene,camera);
+})();
+
+// exponer setter al script clásico de abajo
+window._setHablando = v => { hablando=v; if(!v) tHabla=0; };
+window._setAvatarScale = mult => {
+  if(avatarGroup && avatarGroup.userData && avatarGroup.userData.initialSc) {
+     const newScale = avatarGroup.userData.initialSc * mult;
+     avatarGroup.userData.baseScale = newScale;
+     avatarGroup.scale.setScalar(newScale);
+  }
+};
+window._setAvatarY = y => {
+  if(avatarGroup && avatarGroup.userData) {
+     avatarGroup.userData.baseY = y;
+  }
+};
+window._setAvatarX = x => {
+  if(avatarGroup && avatarGroup.userData) {
+     avatarGroup.userData.baseX = x;
+     avatarGroup.position.x = x;
+  }
+};
+window._setAvatarZ = z => {
+  if(avatarGroup && avatarGroup.userData) {
+     avatarGroup.userData.baseZ = z;
+     avatarGroup.position.z = z;
+  }
+};
+</script>
+
+<!-- TTS — llama a ElevenLabs directamente igual que el código de referencia -->
+<script>
+let _audio = null;
+
+const badge    = document.getElementById('badge');
+const badgeTxt = document.getElementById('badge-txt');
+const atag     = document.getElementById('atag');
+const viz      = document.getElementById('viz');
+const btnGo    = document.getElementById('btn-go');
+
+function setOn(v) {
+  window._setHablando?.(v);
+  badge.classList.toggle('on', v);
+  atag.classList.toggle('on',  v);
+  viz.classList.toggle('on',   v);
+  badgeTxt.textContent = v ? 'hablando...' : 'en espera';
+  atag.textContent     = v ? 'activo'      : 'inactivo';
+  btnGo.disabled       = v;
+  btnGo.textContent    = v ? '⏳ generando...' : '▶ Hablar';
+}
+
+function addMsg(txt, cls='msg-av') {
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  el.textContent = txt;
+  const log = document.getElementById('log');
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function hablar() {
+  const texto   = document.getElementById('txt').value.trim();
+  const apiKey  = document.getElementById('apikey').value.trim();
+  const selVoz  = document.getElementById('voice').value;
+  const voiceId = selVoz === 'custom' ? document.getElementById('voice-custom').value.trim() : selVoz;
+  const speed   = parseFloat(document.getElementById('sl-speed').value);
+
+  if (!texto)   { addMsg('⚠ Escribe algo primero.', 'msg-sys'); return; }
+  if (!apiKey)  { addMsg('⚠ Necesitas una API key de ElevenLabs.\nObtenerla gratis en elevenlabs.io', 'msg-sys'); return; }
+  if (!voiceId) { addMsg('⚠ Introduce un Voice ID válido.', 'msg-sys'); return; }
+
+  if (_audio) { _audio.pause(); _audio = null; }
+  setOn(true);
+  addMsg(texto, 'msg-user');
+
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'accept':       'audio/mpeg',
+        'xi-api-key':   apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: texto,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75, speed }
+      })
+    });
+
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { const j=await res.json(); msg=j?.detail?.message||j?.detail||msg; } catch{}
+      throw new Error(msg);
+    }
+
+    const url  = URL.createObjectURL(await res.blob());
+    _audio = new Audio(url);
+    _audio.onplay  = () => setOn(true);
+    _audio.onended = () => { setOn(false); URL.revokeObjectURL(url); document.getElementById('txt').value=''; };
+    _audio.onerror = () => { setOn(false); addMsg('⚠ Error reproduciendo audio.','msg-sys'); };
+    await _audio.play();
+
+  } catch(e) {
+    setOn(false);
+    addMsg(`⚠ ${e.message}`, 'msg-sys');
+  }
+}
+
+function parar() {
+  if (_audio) { _audio.pause(); _audio=null; }
+  setOn(false);
+}
+
+document.getElementById('btn-go').addEventListener('click', hablar);
+document.getElementById('btn-stop').addEventListener('click', parar);
+document.getElementById('txt').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();hablar();} });
+document.getElementById('sl-speed').addEventListener('input', function(){ document.getElementById('lbl-speed').textContent=parseFloat(this.value).toFixed(2); });
+document.getElementById('voice').addEventListener('change', function(){ document.getElementById('row-custom').style.display=this.value==='custom'?'':'none'; });
+
+// Debug sliders
+document.getElementById('sl-scale').addEventListener('input', function() {
+  const mult = parseFloat(this.value);
+  document.getElementById('lbl-scale').textContent = mult.toFixed(2) + 'x';
+  if(window._setAvatarScale) window._setAvatarScale(mult);
+});
+document.getElementById('sl-y').addEventListener('input', function() {
+  const y = parseFloat(this.value);
+  document.getElementById('lbl-y').textContent = y.toFixed(2);
+  if(window._setAvatarY) window._setAvatarY(y);
+});
+document.getElementById('sl-x').addEventListener('input', function() {
+  const x = parseFloat(this.value);
+  document.getElementById('lbl-x').textContent = x.toFixed(2);
+  if(window._setAvatarX) window._setAvatarX(x);
+});
+document.getElementById('sl-z').addEventListener('input', function() {
+  const z = parseFloat(this.value);
+  document.getElementById('lbl-z').textContent = z.toFixed(2);
+  if(window._setAvatarZ) window._setAvatarZ(z);
+});
+</script>
+</body>
+</html>
