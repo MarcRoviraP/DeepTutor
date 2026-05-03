@@ -171,7 +171,7 @@ textarea::placeholder { color:var(--muted); }
 <div id="panel">
   <div id="ph">
     <h1>Avatar Virtual</h1>
-    <p>// 3D · ElevenLabs TTS · animación reactiva</p>
+    <p>// 3D · Piper TTS (Local) · animación reactiva</p>
   </div>
   <div id="acard">
     <div id="aicon">🤖</div>
@@ -179,32 +179,12 @@ textarea::placeholder { color:var(--muted); }
     <div id="atag">inactivo</div>
   </div>
   <div id="log">
-    <div class="msg msg-av">Hola. Introduce tu API key de ElevenLabs y escribe algo para que lo diga en voz alta.</div>
+    <div class="msg msg-av">Hola. La API local de Piper está lista. Escribe algo para que lo diga en voz alta.</div>
   </div>
   <div id="cfg">
     <div class="row">
-      <span class="lbl">api key</span>
-      <input type="password" id="apikey" placeholder="sk_xxxxxxxxxxxxxxxx">
-    </div>
-    <div class="row">
-      <span class="lbl">voz</span>
-      <select id="voice">
-        <option value="EXAVITQu4vr4xnSDxMaL">Sarah — ES/EN femenina</option>
-        <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — EN masculina</option>
-        <option value="XB0fDUnXU5powFXDhCwa">Charlotte — ES/EN femenina</option>
-        <option value="onwK4e9ZLuTAKqWW03F9">Daniel — EN masculina</option>
-        <option value="pNInz6obpgDQGcFmaJgB">Adam — EN masculina</option>
-        <option value="custom">— ID personalizado —</option>
-      </select>
-    </div>
-    <div class="row" id="row-custom" style="display:none">
-      <span class="lbl">voice id</span>
-      <input type="text" id="voice-custom" placeholder="pNInz6obpgDQGcFmaJgB">
-    </div>
-    <div class="row">
-      <span class="lbl">veloc.</span>
-      <input type="range" id="sl-speed" min="0.7" max="1.3" step="0.05" value="1">
-      <span class="rv" id="lbl-speed">1.00</span>
+      <span class="lbl">API URL</span>
+      <input type="text" id="apiurl" value="http://68.221.175.191:5000/tts">
     </div>
     <div class="row">
       <span class="lbl">escala</span>
@@ -226,7 +206,7 @@ textarea::placeholder { color:var(--muted); }
       <input type="range" id="sl-z" min="-5" max="5" step="0.05" value="0.05">
       <span class="rv" id="lbl-z">0.05</span>
     </div>
-    <p class="hint">Gratis en <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a> · 10k chars/mes sin tarjeta</p>
+    <p class="hint">Usando API local de Piper TTS</p>
   </div>
   <div id="ia">
     <textarea id="txt" placeholder="Escribe el texto que quieres que diga el avatar..."></textarea>
@@ -469,7 +449,7 @@ window._setAvatarZ = z => {
 };
 </script>
 
-<!-- TTS — llama a ElevenLabs directamente igual que el código de referencia -->
+<!-- TTS — llama a la API local de Piper (Flask) -->
 <script>
 let _audio = null;
 
@@ -500,33 +480,23 @@ function addMsg(txt, cls='msg-av') {
 }
 
 async function hablar() {
-  const texto   = document.getElementById('txt').value.trim();
-  const apiKey  = document.getElementById('apikey').value.trim();
-  const selVoz  = document.getElementById('voice').value;
-  const voiceId = selVoz === 'custom' ? document.getElementById('voice-custom').value.trim() : selVoz;
-  const speed   = parseFloat(document.getElementById('sl-speed').value);
+  const texto  = document.getElementById('txt').value.trim();
+  const apiURL = document.getElementById('apiurl').value.trim();
 
-  if (!texto)   { addMsg('⚠ Escribe algo primero.', 'msg-sys'); return; }
-  if (!apiKey)  { addMsg('⚠ Necesitas una API key de ElevenLabs.\nObtenerla gratis en elevenlabs.io', 'msg-sys'); return; }
-  if (!voiceId) { addMsg('⚠ Introduce un Voice ID válido.', 'msg-sys'); return; }
+  if (!texto)  { addMsg('⚠ Escribe algo primero.', 'msg-sys'); return; }
+  if (!apiURL) { addMsg('⚠ Configura la URL de la API.', 'msg-sys'); return; }
 
   if (_audio) { _audio.pause(); _audio = null; }
   setOn(true);
   addMsg(texto, 'msg-user');
 
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const res = await fetch(apiURL, {
       method: 'POST',
       headers: {
-        'accept':       'audio/mpeg',
-        'xi-api-key':   apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        text: texto,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75, speed }
-      })
+      body: JSON.stringify({ text: texto })
     });
 
     if (!res.ok) {
@@ -535,16 +505,22 @@ async function hablar() {
       throw new Error(msg);
     }
 
-    const url  = URL.createObjectURL(await res.blob());
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
     _audio = new Audio(url);
     _audio.onplay  = () => setOn(true);
     _audio.onended = () => { setOn(false); URL.revokeObjectURL(url); document.getElementById('txt').value=''; };
-    _audio.onerror = () => { setOn(false); addMsg('⚠ Error reproduciendo audio.','msg-sys'); };
+    _audio.onerror = (e) => { 
+      console.error('Audio Error:', e);
+      setOn(false); 
+      addMsg('⚠ Error reproduciendo audio. Revisa la consola.', 'msg-sys'); 
+    };
     await _audio.play();
 
   } catch(e) {
     setOn(false);
     addMsg(`⚠ ${e.message}`, 'msg-sys');
+    console.error('Fetch Error:', e);
   }
 }
 
@@ -556,8 +532,6 @@ function parar() {
 document.getElementById('btn-go').addEventListener('click', hablar);
 document.getElementById('btn-stop').addEventListener('click', parar);
 document.getElementById('txt').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();hablar();} });
-document.getElementById('sl-speed').addEventListener('input', function(){ document.getElementById('lbl-speed').textContent=parseFloat(this.value).toFixed(2); });
-document.getElementById('voice').addEventListener('change', function(){ document.getElementById('row-custom').style.display=this.value==='custom'?'':'none'; });
 
 // Debug sliders
 document.getElementById('sl-scale').addEventListener('input', function() {
