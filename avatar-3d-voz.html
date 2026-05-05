@@ -317,50 +317,67 @@ function cargarGLB() {
   if (!GLB_URL) return;
   new GLTFLoader().load(GLB_URL, gltf => {
     scene.remove(avatarGroup);
-    const m=gltf.scene;
-    const box=new THREE.Box3().setFromObject(m);
-    const size=box.getSize(new THREE.Vector3());
-    // Normalizamos la altura del modelo a 1.2 unidades para que encaje perfecto en la cámara
-    const sc=1.2/size.y;
-    m.position.sub(box.getCenter(new THREE.Vector3()).multiplyScalar(sc));
-    scene.add(m); avatarGroup=m;
+    const m = gltf.scene;
 
+    // 1. Primero calculamos el bounding box en su estado original
+    const box  = new THREE.Box3().setFromObject(m);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // 2. Normalizamos la escala base para que el modelo mida ~1.2u de alto
+    const sc = 1.2 / size.y;
     m.userData.initialSc = sc;
 
-    // Leer valores por defecto de la UI
+    // 3. Centramos el modelo en el origen (ANTES de aplicar escala extra UI)
+    //    Restamos el centro en coordenadas locales, sin multiplicar por sc
+    //    porque la escala se aplica aparte con m.scale
+    m.position.sub(center);
+
+    // 4. Ahora aplicamos la escala
     const defScale = parseFloat(document.getElementById('sl-scale').value);
-    const defY = parseFloat(document.getElementById('sl-y').value);
-    const defX = parseFloat(document.getElementById('sl-x').value);
-    const defZ = parseFloat(document.getElementById('sl-z').value);
+    const defY     = parseFloat(document.getElementById('sl-y').value);
+    const defX     = parseFloat(document.getElementById('sl-x').value);
+    const defZ     = parseFloat(document.getElementById('sl-z').value);
 
     m.userData.baseScale = sc * defScale;
     m.scale.setScalar(m.userData.baseScale);
-    
+
+    // 5. Posición ajustable por UI
     m.userData.baseY = defY;
-    m.position.y = defY;
-    
     m.userData.baseX = defX;
-    m.position.x = defX;
-
     m.userData.baseZ = defZ;
-    m.position.z = defZ;
+    m.position.set(defX, defY, defZ);
 
-    if(gltf.animations.length){ 
-      mixer = new THREE.AnimationMixer(m); 
-      idleAction = mixer.clipAction(gltf.animations[0]);
+    scene.add(m);
+    avatarGroup = m;
+
+    // 6. Animaciones: el modelo tiene 5 (Base, Computation, Error, Love, Allert)
+    if (gltf.animations.length) {
+      mixer = new THREE.AnimationMixer(m);
+      idleAction = mixer.clipAction(gltf.animations[0]); // 'Base'
       idleAction.play();
-      if(gltf.animations.length > 1) {
-        talkAction = mixer.clipAction(gltf.animations[1]);
+      if (gltf.animations.length > 1) {
+        talkAction = mixer.clipAction(gltf.animations[1]); // 'Computation'
       }
     }
-    
-    // Quitar la pantalla de carga con éxito
-    setTimeout(()=>{ const ld=document.getElementById('loading'); if(ld) { ld.style.opacity='0'; setTimeout(()=>ld.remove(),500); } }, 200);
 
-  }, xhr=>{ loadTxt.textContent=`GLB ${Math.round(xhr.loaded/xhr.total*100)}%`; }, err=>{
+    // 7. Ocultar loading
+    setTimeout(() => {
+      const ld = document.getElementById('loading');
+      if (ld) { ld.style.opacity = '0'; setTimeout(() => ld.remove(), 500); }
+    }, 200);
+
+  }, xhr => {
+    // xhr.total puede ser 0 si el servidor no manda Content-Length
+    const pct = xhr.total > 0 ? Math.round(xhr.loaded / xhr.total * 100) : Math.round(xhr.loaded / 1024) + ' KB';
+    loadTxt.textContent = `GLB cargando… ${pct}${xhr.total > 0 ? '%' : ''}`;
+  }, err => {
     console.error('GLB Error:', err);
-    loadTxt.textContent = '❌ Error de CORS. ¡Iniciá el servidor local!';
-    setTimeout(()=> { const ld = document.getElementById('loading'); if(ld) { ld.style.opacity='0'; setTimeout(()=>ld.remove(),500); } }, 4000);
+    loadTxt.textContent = '❌ Error cargando GLB. Revisá la consola.';
+    setTimeout(() => {
+      const ld = document.getElementById('loading');
+      if (ld) { ld.style.opacity = '0'; setTimeout(() => ld.remove(), 500); }
+    }, 4000);
   });
 }
 
@@ -451,7 +468,8 @@ window._setAvatarZ = z => {
 
 <!-- TTS — llama a la API local de Piper (Flask) -->
 <script>
-let _audio = null;
+let _audio   = null;
+let _sesionId = 0;
 
 const badge    = document.getElementById('badge');
 const badgeTxt = document.getElementById('badge-txt');
@@ -479,53 +497,123 @@ function addMsg(txt, cls='msg-av') {
   log.scrollTop = log.scrollHeight;
 }
 
+// ─── Chunking ─────────────────────────────────────────────────────────
+// Divide el texto en bloques de ~500 chars cortando en límite de frase.
+// Prioridad de corte: [.!?…;] > [,] > espacio > fuerza en targetLen+tol
+function dividirEnChunks(texto, targetLen = 500, tolerancia = 80) {
+  const chunks = [];
+  let resto = texto.trim();
+
+  while (resto.length > targetLen + tolerancia) {
+    const limite = targetLen + tolerancia;
+    let corte = hallarCorte(resto, targetLen, limite, /[.!?…;]\s+/g);
+    if (corte === -1) corte = hallarCorte(resto, targetLen, limite, /,\s+/g);
+    if (corte === -1) corte = hallarCorte(resto, targetLen, limite, /\s+/g);
+    if (corte === -1) corte = limite;
+    chunks.push(resto.slice(0, corte).trim());
+    resto = resto.slice(corte).trim();
+  }
+  if (resto.length) chunks.push(resto);
+  return chunks;
+}
+
+function hallarCorte(texto, desde, hasta, regex) {
+  regex.lastIndex = 0;
+  let ultimo = -1, m;
+  while ((m = regex.exec(texto)) !== null) {
+    const pos = m.index + m[0].length;
+    if (pos >= desde && pos <= hasta) ultimo = pos;
+    if (pos > hasta) break;
+  }
+  return ultimo;
+}
+
+// ─── Fetch de un chunk ────────────────────────────────────────────────
+async function fetchChunk(texto, apiURL) {
+  const res = await fetch(apiURL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: texto })
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { const j = await res.json(); msg = j?.detail?.message || j?.detail || msg; } catch {}
+    throw new Error(msg);
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
+// ─── Reproducción en cadena con prefetch ──────────────────────────────
 async function hablar() {
   const texto  = document.getElementById('txt').value.trim();
   const apiURL = document.getElementById('apiurl').value.trim();
-
   if (!texto)  { addMsg('⚠ Escribe algo primero.', 'msg-sys'); return; }
   if (!apiURL) { addMsg('⚠ Configura la URL de la API.', 'msg-sys'); return; }
 
-  if (_audio) { _audio.pause(); _audio = null; }
+  parar();                          // cancela lo anterior
+  const sesion = ++_sesionId;       // token de esta sesión
   setOn(true);
   addMsg(texto, 'msg-user');
 
+  const chunks = dividirEnChunks(texto);
+  const total  = chunks.length;
+  if (total > 1) addMsg(`📦 ${total} fragmentos`, 'msg-sys');
+
+  // Tabla de resultados: url | null | Error
+  const urls  = new Array(total).fill(null);
+  const errs  = new Array(total).fill(null);
+  const fired = new Set();
+
+  function prefetch(i) {
+    if (i >= total || fired.has(i)) return;
+    fired.add(i);
+    fetchChunk(chunks[i], apiURL)
+      .then(u => { urls[i] = u; })
+      .catch(e => { errs[i] = e.message; });
+  }
+
+  prefetch(0); prefetch(1);         // arranca los dos primeros en paralelo
+
   try {
-    const res = await fetch(apiURL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ text: texto })
-    });
+    for (let i = 0; i < total; i++) {
+      if (_sesionId !== sesion) return;
+      prefetch(i + 2);              // prefetch uno adelante
 
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j=await res.json(); msg=j?.detail?.message||j?.detail||msg; } catch{}
-      throw new Error(msg);
+      if (total > 1) badgeTxt.textContent = `hablando ${i + 1}/${total}…`;
+
+      // esperar a que el fetch esté listo (polling ligero)
+      while (!urls[i] && !errs[i]) {
+        if (_sesionId !== sesion) return;
+        await new Promise(r => setTimeout(r, 80));
+      }
+      if (errs[i]) throw new Error(`Fragmento ${i + 1}: ${errs[i]}`);
+
+      // reproducir y esperar fin
+      await new Promise((res, rej) => {
+        if (_sesionId !== sesion) { URL.revokeObjectURL(urls[i]); res(); return; }
+        const a = new Audio(urls[i]);
+        _audio = a;
+        a.onended = () => { URL.revokeObjectURL(urls[i]); res(); };
+        a.onerror = () => { URL.revokeObjectURL(urls[i]); rej(new Error('Error de audio')); };
+        a.play().catch(rej);
+      });
     }
-
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    _audio = new Audio(url);
-    _audio.onplay  = () => setOn(true);
-    _audio.onended = () => { setOn(false); URL.revokeObjectURL(url); document.getElementById('txt').value=''; };
-    _audio.onerror = (e) => { 
-      console.error('Audio Error:', e);
-      setOn(false); 
-      addMsg('⚠ Error reproduciendo audio. Revisa la consola.', 'msg-sys'); 
-    };
-    await _audio.play();
-
+    if (_sesionId === sesion) {
+      setOn(false);
+      document.getElementById('txt').value = '';
+    }
   } catch(e) {
-    setOn(false);
-    addMsg(`⚠ ${e.message}`, 'msg-sys');
-    console.error('Fetch Error:', e);
+    if (_sesionId === sesion) {
+      setOn(false);
+      addMsg(`⚠ ${e.message}`, 'msg-sys');
+      console.error('TTS Error:', e);
+    }
   }
 }
 
 function parar() {
-  if (_audio) { _audio.pause(); _audio=null; }
+  _sesionId++;                      // invalida sesión activa
+  if (_audio) { _audio.pause(); _audio = null; }
   setOn(false);
 }
 

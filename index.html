@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Virtual 3D</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #080810;
+  --surface: #0f0f1a;
+  --s2:      #161624;
+  --s3:      #1e1e30;
+  --border:  rgba(110,90,255,0.15);
+  --accent:  #6e5aff;
+  --accent2: #b48cff;
+  --text:    #e4e0ff;
+  --muted:   #6a6890;
+  --danger:  #ff5a7a;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; }
+body { display: grid; grid-template-columns: 1fr 320px; }
+
+/* ─── ESCENA ───────────────────────────────────── */
+#scene-wrap {
+  position: relative; overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 50% 70%, #1a0a3e 0%, transparent 70%), var(--bg);
+}
+#scene-wrap::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: linear-gradient(rgba(110,90,255,.04) 1px,transparent 1px), linear-gradient(90deg,rgba(110,90,255,.04) 1px,transparent 1px);
+  background-size: 56px 56px;
+}
+canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; z-index: 2; }
+
+.corner { position: absolute; z-index: 10; width: 20px; height: 20px; opacity: .45; }
+.corner-tl { top:14px; left:14px;   border-top:1.5px solid var(--accent); border-left:1.5px solid var(--accent); }
+.corner-tr { top:14px; right:14px;  border-top:1.5px solid var(--accent); border-right:1.5px solid var(--accent); }
+.corner-bl { bottom:14px; left:14px;  border-bottom:1.5px solid var(--accent); border-left:1.5px solid var(--accent); }
+.corner-br { bottom:14px; right:14px; border-bottom:1.5px solid var(--accent); border-right:1.5px solid var(--accent); }
+
+#badge {
+  position: absolute; top:18px; left:50%; transform:translateX(-50%); z-index:10;
+  display:flex; align-items:center; gap:7px; padding:5px 14px; border-radius:999px;
+  background:rgba(8,8,16,.85); border:1px solid var(--border);
+  font-size:11px; font-family:'DM Mono',monospace; color:var(--muted);
+  backdrop-filter:blur(10px); transition:all .4s;
+}
+#badge.on { color:var(--accent2); border-color:rgba(180,140,255,.4); }
+#dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition:background .3s; }
+#badge.on #dot { background:var(--accent2); animation:pulse .7s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(1.5)} }
+
+#viz {
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:10;
+  display:flex; align-items:flex-end; gap:3px; height:32px; opacity:0; transition:opacity .4s;
+}
+#viz.on { opacity:1; }
+.bar { width:4px; background:linear-gradient(to top,var(--accent),var(--accent2)); border-radius:2px; min-height:3px; }
+
+#loading {
+  position:absolute; inset:0; z-index:20;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  background:var(--bg); transition:opacity .5s;
+}
+.spinner { width:36px; height:36px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+#loading p { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
+#minfo { position:absolute; bottom:14px; right:16px; z-index:10; font-size:9px; color:rgba(110,90,255,.22); font-family:'DM Mono',monospace; text-align:right; line-height:1.7; }
+
+/* ─── PANEL ─────────────────────────────────────── */
+#panel { background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+
+#ph { padding:22px 20px 16px; border-bottom:1px solid var(--border); }
+#ph h1 { font-size:18px; font-weight:800; letter-spacing:-.02em; }
+#ph p  { font-size:11px; color:var(--muted); margin-top:3px; font-family:'DM Mono',monospace; }
+
+#acard {
+  margin:14px 16px 0; padding:12px 14px;
+  background:var(--s2); border:1px solid var(--border); border-radius:10px;
+  display:flex; align-items:center; gap:10px;
+}
+#aicon { width:36px; height:36px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:16px; }
+#acard strong { display:block; font-size:13px; }
+#acard span   { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+#atag { margin-left:auto; font-size:10px; padding:2px 8px; border-radius:999px; background:rgba(110,90,255,.12); color:var(--accent2); font-family:'DM Mono',monospace; border:1px solid rgba(110,90,255,.25); transition:all .3s; }
+#atag.on { background:rgba(180,140,255,.18); border-color:rgba(180,140,255,.5); }
+
+#log { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+#log::-webkit-scrollbar { width:3px; }
+#log::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.msg { padding:9px 12px; border-radius:9px; font-size:12.5px; line-height:1.55; animation:fadeup .25s ease; white-space:pre-wrap; }
+@keyframes fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.msg-av   { background:rgba(110,90,255,.1); border:1px solid rgba(110,90,255,.2); align-self:flex-start; border-bottom-left-radius:2px; }
+.msg-user { background:var(--s2); border:1px solid var(--border); color:var(--muted); align-self:flex-end; border-bottom-right-radius:2px; max-width:92%; }
+.msg-sys  { background:rgba(255,90,122,.07); border:1px solid rgba(255,90,122,.2); color:#ff8a9e; font-size:11px; font-family:'DM Mono',monospace; border-radius:7px; }
+
+#cfg { padding:12px 16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:7px; }
+.row { display:flex; align-items:center; gap:8px; }
+.lbl { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; min-width:52px; }
+
+input[type=text], input[type=password], select {
+  flex:1; background:var(--s3); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 9px; font-size:11px; font-family:'DM Mono',monospace;
+  outline:none; transition:border-color .2s; appearance:none;
+}
+input[type=text]:focus, input[type=password]:focus, select:focus { border-color:var(--accent); }
+input[type=password]::placeholder, input[type=text]::placeholder { color:var(--muted); }
+
+input[type=range] {
+  flex:1; height:3px; background:var(--border); border:none; border-radius:2px;
+  outline:none; cursor:pointer; appearance:none; padding:0;
+}
+input[type=range]::-webkit-slider-thumb { appearance:none; width:13px; height:13px; border-radius:50%; background:var(--accent); cursor:pointer; }
+.rv { font-size:10px; color:var(--accent2); font-family:'DM Mono',monospace; min-width:26px; text-align:right; }
+.hint { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; line-height:1.5; }
+.hint a { color:var(--accent2); text-decoration:none; }
+
+#ia { padding:12px 16px 16px; }
+textarea {
+  width:100%; background:var(--s3); border:1px solid var(--border); border-radius:9px;
+  padding:10px 12px; color:var(--text); font-size:12.5px; font-family:'Syne',sans-serif;
+  outline:none; resize:none; min-height:66px; line-height:1.5; transition:border-color .2s;
+}
+textarea:focus { border-color:var(--accent); }
+textarea::placeholder { color:var(--muted); }
+
+#btnrow { display:flex; gap:7px; margin-top:8px; }
+#btn-go {
+  flex:1; padding:10px; border:none; border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff; font-size:12.5px; font-weight:700; font-family:'Syne',sans-serif;
+  cursor:pointer; transition:opacity .2s,transform .1s; letter-spacing:.02em;
+}
+#btn-go:hover { opacity:.88; }
+#btn-go:active { transform:scale(.97); }
+#btn-go:disabled { opacity:.35; cursor:not-allowed; }
+#btn-stop {
+  padding:10px 13px; background:transparent; border:1px solid var(--border);
+  border-radius:7px; color:var(--muted); font-size:13px; cursor:pointer;
+  font-family:'Syne',sans-serif; transition:all .2s;
+}
+#btn-stop:hover { border-color:rgba(255,90,122,.5); color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div id="scene-wrap">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div id="badge"><div id="dot"></div><span id="badge-txt">en espera</span></div>
+  <div id="loading"><div class="spinner"></div><p id="load-txt">iniciando escena 3D...</p></div>
+  <canvas id="c"></canvas>
+  <div id="viz">
+    <div class="bar" style="height:5px"></div><div class="bar" style="height:10px"></div>
+    <div class="bar" style="height:18px"></div><div class="bar" style="height:26px"></div>
+    <div class="bar" style="height:30px"></div><div class="bar" style="height:26px"></div>
+    <div class="bar" style="height:18px"></div><div class="bar" style="height:10px"></div>
+    <div class="bar" style="height:5px"></div>
+  </div>
+  <div id="minfo">three.js r160<br>webgl2</div>
+</div>
+
+<div id="panel">
+  <div id="ph">
+    <h1>Avatar Virtual</h1>
+    <p>// 3D · Piper TTS (Local) · animación reactiva</p>
+  </div>
+  <div id="acard">
+    <div id="aicon">🤖</div>
+    <div><strong>ARIA-01</strong><span>asistente virtual</span></div>
+    <div id="atag">inactivo</div>
+  </div>
+  <div id="log">
+    <div class="msg msg-av">Hola. La API local de Piper está lista. Escribe algo para que lo diga en voz alta.</div>
+  </div>
+  <div id="cfg">
+    <div class="row">
+      <span class="lbl">API URL</span>
+      <input type="text" id="apiurl" value="http://68.221.175.191:5000/tts">
+    </div>
+    <div class="row">
+      <span class="lbl">escala</span>
+      <input type="range" id="sl-scale" min="0.01" max="5" step="0.01" value="0.05">
+      <span class="rv" id="lbl-scale">0.05x</span>
+    </div>
+    <div class="row">
+      <span class="lbl">altura y</span>
+      <input type="range" id="sl-y" min="-3" max="3" step="0.05" value="0.55">
+      <span class="rv" id="lbl-y">0.55</span>
+    </div>
+    <div class="row">
+      <span class="lbl">distancia x</span>
+      <input type="range" id="sl-x" min="-3" max="3" step="0.05" value="0">
+      <span class="rv" id="lbl-x">0.00</span>
+    </div>
+    <div class="row">
+      <span class="lbl">distancia z</span>
+      <input type="range" id="sl-z" min="-5" max="5" step="0.05" value="0.05">
+      <span class="rv" id="lbl-z">0.05</span>
+    </div>
+    <p class="hint">Usando API local de Piper TTS</p>
+  </div>
+  <div id="ia">
+    <textarea id="txt" placeholder="Escribe el texto que quieres que diga el avatar..."></textarea>
+    <div id="btnrow">
+      <button id="btn-go">▶ Hablar</button>
+      <button id="btn-stop">■ Stop</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

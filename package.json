@@ -1,0 +1,17 @@
+{
+  "name": "deeptutor",
+  "version": "1.0.0",
+  "description": "Avatar 3D con TTS local",
+  "private": true,
+  "scripts": {
+    "dev":   "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
