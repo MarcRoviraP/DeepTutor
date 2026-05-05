@@ -4,10 +4,11 @@ Este documento detalla los pasos seguidos para la configuración de la infraestr
 
 ## Índice
 
-1. [Configuración del Servidor SQL (PostgreSQL)](#1-configuración-del-servidor-sql-postgresql)
-2. [Herramientas de Gestión de Datos](#2-herramientas-de-gestión-de-datos)
-3. [Acceso Remoto para Colaboradores](#3-acceso-remoto-para-colaboradores)
-4. [Creación de la API de Texto a Voz (Piper TTS)](#4-creación-de-la-api-de-texto-a-voz-piper-tts)
+1. [Configuración de PostgreSQL](#1-configuración-de-postgresql)
+2. [Seguridad de la API](#2-seguridad-de-la-api)
+3. [Endpoints de la API](#3-endpoints-de-la-api)
+4. [Ejemplos de Uso (CURL)](#4-ejemplos-de-uso-curl)
+5. [Creación de la API de Texto a Voz (Piper TTS)](#5-creación-de-la-api-de-texto-a-voz-piper-tts)
     - [Catálogo de Voces Disponibles](#catálogo-de-voces-disponibles)
     - [Requisitos e Instalación](#requisitos-e-instalación)
     - [Endpoints](#endpoints)
@@ -16,51 +17,74 @@ Este documento detalla los pasos seguidos para la configuración de la infraestr
 
 ---
 
-## 1. Configuración del Servidor SQL (PostgreSQL)
+## 1. Configuración de PostgreSQL
+- **Host:** `68.221.175.191` (o `localhost` internamente)
+- **Puerto:** `5432`
+- **Usuario:** `postgresql`
+- **Contraseña:** `123456`
+- **Base de Datos:** `app_db`
 
-Se ha instalado y configurado un servidor PostgreSQL en un entorno Linux (Arch/CachyOS).
+## 2. Seguridad de la API
+La API requiere una clave secreta en la cabecera de cada petición (excepto `/health`).
 
-### Instalación e Inicialización
-1. **Instalación**: Se utilizó el gestor de paquetes `pacman` para instalar `postgresql`.
-2. **Inicialización**: Se creó el cluster de datos en `/var/lib/postgres/data`.
-3. **Servicio**: El servidor se configuró para iniciar automáticamente con el sistema:
-   ```bash
-   sudo systemctl enable --now postgresql
-   ```
+- **Cabecera (Header):** `X-API-Key`
+- **Código Secreto:** `<API_KEY>` (Contactar con el administrador)
 
-### Configuración de Usuario y Base de Datos
-Se creó un rol de superusuario y una base de datos propia para evitar el uso constante del usuario `postgres`:
-- **Usuario**: `marc` (Superusuario)
-- **Base de Datos**: `marc`
-- **Contraseña**: `12344321` (Configurada para permitir conexiones remotas)
+## 3. Endpoints de la API
+La API escucha en el puerto **5001**. Todos los endpoints aceptan `GET`, `POST`, `PUT` (actualizar por ID) y `DELETE` (eliminar por ID).
 
-## 2. Herramientas de Gestión de Datos
-
-Para la administración visual de los datos, se instaló **DBeaver Community Edition**:
-```bash
-sudo pacman -S dbeaver
-```
-
-## 3. Acceso Remoto para Colaboradores
-
-Se habilitó la conexión para que otros miembros del equipo puedan conectarse al servidor local.
-
-### Cambios en la Configuración
-- **Escucha Global**: En `postgresql.conf`, se cambió `listen_addresses` a `'*'` para aceptar conexiones fuera de localhost.
-- **Permisos de Red**: En `pg_hba.conf`, se autorizó el rango de red local:
-  - Regla: `host all all 10.0.213.0/24 scram-sha-256`
-- **Firewall**: Se abrió el puerto TCP `5432`.
-
-### Datos de Conexión para el Equipo
-- **Host (IP)**: `10.0.213.131`
-- **Puerto**: `5432`
-- **Database**: `marc`
-- **Username**: `marc`
-- **Password**: `12344321`
+| Endpoint | Descripción |
+| :--- | :--- |
+| `/usuarios` | Gestión de usuarios |
+| `/topics` | Temas de estudio |
+| `/progreso_usuario` | Seguimiento de progreso |
+| `/ejercicios` | Ejercicios prácticos |
+| `/casos_prueba` | Casos de prueba para ejercicios |
+| `/conversaciones` | Sesiones de chat |
+| `/chat` | Mensajes individuales |
+| `/errores_detectados` | Catálogo de errores comunes |
+| `/reglas_validacion` | Reglas de lógica de validación |
+| `/error_regla` | Relación entre errores y reglas |
+| `/user_errors` | Contador de errores por usuario |
+| `/base_conocimiento` | Artículos de conocimiento |
 
 ---
 
-## 4. Creación de la API de Texto a Voz (Piper TTS)
+## 4. Ejemplos de Uso (CURL)
+
+### Listar (GET)
+```bash
+curl -H "X-API-Key: <API_KEY>" http://68.221.175.191:5001/
+```
+
+### Crear (POST)
+```bash
+curl -X POST http://68.221.175.191:5001/usuarios \
+     -H "X-API-Key: <API_KEY>" \
+     -H "Content-Type: application/json" \
+     -d '{"nombre": "Juan Perez", "email": "juan@example.com", "password_hash": "hash123", "nivel": "intermedio"}'
+```
+
+### Actualizar (PUT)
+Para actualizar, añade el ID al final de la URL y envía solo los campos que quieres cambiar.
+```bash
+curl -X PUT http://68.221.175.191:5001/usuarios/1 \
+     -H "X-API-Key: <API_KEY>" \
+     -H "Content-Type: application/json" \
+     -d '{"nivel": "experto"}'
+```
+
+### Eliminar (DELETE)
+Añade el ID al final de la URL.
+```bash
+curl -X DELETE http://68.221.175.191:5001/usuarios/1 \
+     -H "X-API-Key: <API_KEY>"
+```
+
+---
+**Nota:** Si la conexión falla desde fuera (DBeaver o API), asegúrate de haber abierto los puertos **5432** y **5001** en el panel de Azure (Network Security Group).
+
+## 5. Creación de la API de Texto a Voz (Piper TTS)
 
 Esta es una API sencilla construida con Flask que utiliza [Piper](https://github.com/rhasspy/piper) para convertir texto en audio (WAV).
 
