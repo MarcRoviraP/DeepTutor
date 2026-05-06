@@ -7,14 +7,17 @@ const mockData = {
     user: {
         name: "Developer",
         path: "Python Backend",
-        streak: "12 Days",
-        level: "LVL 24",
-        nextLevelXP: "450 XP",
-        solvedTasks: 84
+        stats: {
+            studyTime: 42,
+            exercisesDone: 84,
+            streak: 12,
+            level: 24
+        },
+        nextLevelXP: "450 XP"
     },
     sessions: [
-        { id: 1, title: "Data Structures: Linked Lists", time: "2 hours ago", difficulty: "Intermediate", icon: "data_object", color: "tertiary" },
-        { id: 2, title: "REST API Design with Fast API", time: "Yesterday", difficulty: "Advanced", icon: "api", color: "primary" }
+        { id: 1, title: "Data Structures: Linked Lists", date: "Today", duration: "45 mins", type: "exercise", difficulty: "Intermediate", icon: "data_object", color: "tertiary" },
+        { id: 2, title: "REST API Design with Fast API", date: "Yesterday", duration: "1.5 hours", type: "chat", difficulty: "Advanced", icon: "api", color: "primary" }
     ],
     exercises: [
         { 

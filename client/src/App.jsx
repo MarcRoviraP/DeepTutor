@@ -10,11 +10,15 @@ function App() {
   useEffect(() => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    // ONLY redirect if we are on the login page (root) and have a user
+    if (storedUser && window.location.pathname === '/') {
       const userData = JSON.parse(storedUser)
       setUser(userData)
-      // Auto-redirect if already logged in
+      // Auto-redirect to dashboard
       window.location.href = '/dashboard'
+    } else if (storedUser) {
+      // Just set the user if we are elsewhere but have the data
+      setUser(JSON.parse(storedUser))
     }
   }, [])
 

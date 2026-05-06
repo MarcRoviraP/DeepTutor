@@ -10,6 +10,14 @@ export default defineConfig({
         target: 'http://localhost:5002',
         changeOrigin: true,
       },
+      '/dashboard': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/avatar': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
     },
   },
 })
