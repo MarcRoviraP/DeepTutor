@@ -12,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Handle Logout
+    const logoutBtn = Array.from(document.querySelectorAll('a')).find(a => a.textContent.includes('Logout'));
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        });
+    }
+
     // Initial navigation
     const initialRoute = window.location.hash.replace('#/', '') || 'dashboard';
     router.navigate(initialRoute, null, false);

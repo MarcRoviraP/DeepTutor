@@ -11,7 +11,10 @@ function App() {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      // Auto-redirect if already logged in
+      window.location.href = '/dashboard'
     }
   }, [])
 
@@ -28,6 +31,8 @@ function App() {
       localStorage.setItem('user', JSON.stringify(userData))
       
       setUser(userData)
+      // Redirect to main app
+      window.location.href = '/dashboard'
     } catch (error) {
       console.error('Login failed:', error)
       alert('Error during login. Please try again.')
@@ -68,6 +73,9 @@ function App() {
             <p>{user.email}</p>
             <button onClick={handleLogout} className="logout-btn">
               Sign Out
+            </button>
+            <button onClick={() => window.location.href = '/avatar'} className="home-btn">
+              Volver al Avatar
             </button>
           </div>
         )}

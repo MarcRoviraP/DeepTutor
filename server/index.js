@@ -14,6 +14,9 @@ app.use(express.json());
 
 app.post('/api/auth/google', async (req, res) => {
   const { credential } = req.body;
+  console.log('--- Google Auth Attempt ---');
+  console.log('Credential received (first 10 chars):', credential ? credential.substring(0, 10) + '...' : 'NONE');
+  console.log('Target Client ID (Server):', process.env.GOOGLE_CLIENT_ID);
 
   try {
     // 1. Verify the Google JWT
@@ -24,24 +27,27 @@ app.post('/api/auth/google', async (req, res) => {
 
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
+    console.log('Token verified successfully for:', email);
 
     // 2. Check if user exists in DB
     let userResult = await db.query(
-      'SELECT * FROM users WHERE google_id = $1 OR email = $2',
+      'SELECT * FROM usuarios WHERE google_id = $1 OR email = $2',
       [googleId, email]
     );
 
     let user;
 
     if (userResult.rows.length === 0) {
+      console.log('New user detected, creating record in "usuarios"...');
       // 3. Create new user if doesn't exist
       const newUser = await db.query(
-        'INSERT INTO users (google_id, email, name, picture) VALUES ($1, $2, $3, $4) RETURNING *',
+        'INSERT INTO usuarios (google_id, email, nombre, picture) VALUES ($1, $2, $3, $4) RETURNING *',
         [googleId, email, name, picture]
       );
       user = newUser.rows[0];
     } else {
       user = userResult.rows[0];
+      console.log('Existing user found in "usuarios":', user.email);
     }
 
     // 4. Generate app-specific JWT
@@ -52,24 +58,37 @@ app.post('/api/auth/google', async (req, res) => {
     );
 
     // 5. Send response
+    console.log('Authentication successful, sending token.');
     res.json({
       token,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.nombre, // We map 'nombre' back to 'name' for the frontend
         picture: user.picture,
       },
     });
   } catch (error) {
-    console.error('Error authenticating with Google:', error);
-    res.status(401).json({ error: 'Invalid Google token' });
+    console.error('FAILED Google verification. Error details:');
+    console.error('Message:', error.message);
+    if (error.message.includes('audience')) {
+      console.error('CRITICAL: Audience mismatch. Check if frontend and backend use the EXACT same Client ID.');
+    }
+    console.error('Stack:', error.stack);
+    res.status(401).json({ error: 'Invalid Google token', details: error.message });
   }
+  console.log('--- End Auth Attempt ---');
 });
 
 // --- Unified Frontend Serving ---
-// Serve static files from the React app build
+// Serve static files from the React app build (Login)
 app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Serve the main application (deep-tutor-web) at /dashboard
+app.use('/dashboard', express.static(path.join(__dirname, '../deep-tutor-web')));
+
+// Serve the Avatar app (root directory) at /avatar
+app.use('/avatar', express.static(path.join(__dirname, '../')));
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

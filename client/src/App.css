@@ -90,6 +90,26 @@ h1 {
   transform: translateY(-2px);
 }
 
+.home-btn {
+  margin-top: 12px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: block;
+  width: 100%;
+}
+
+.home-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: translateY(-2px);
+}
+
 .loader {
   border: 4px solid rgba(255, 255, 255, 0.1);
   border-left-color: var(--primary-color);

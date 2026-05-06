@@ -5,7 +5,11 @@ import App from './App.jsx'
 import './index.css'
 
 // IMPORTANT: Replace this with your actual Google Client ID
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1010097715470-jq0gvuejh3qv1fr3fhpklh65il679jad.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+if (!GOOGLE_CLIENT_ID) {
+  console.warn('VITE_GOOGLE_CLIENT_ID is not defined in the environment!');
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
