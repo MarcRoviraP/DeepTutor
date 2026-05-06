@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DeepTutor - Exercises</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#ffb783",
+                        "on-primary-container": "#0d0096",
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "surface-container-highest": "#34343d",
+                        "on-secondary": "#263143",
+                        "background": "#13131b",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "primary": "#c0c1ff",
+                        "on-secondary-fixed": "#111c2d",
+                        "primary-fixed": "#e1e0ff",
+                        "surface": "#13131b",
+                        "inverse-surface": "#e4e1ed",
+                        "secondary-fixed": "#d8e3fb",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "on-surface": "#e4e1ed",
+                        "surface-container-low": "#1b1b23",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "surface-bright": "#393841",
+                        "inverse-on-surface": "#303038",
+                        "secondary": "#bcc7de",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-primary": "#1000a9",
+                        "surface-dim": "#13131b",
+                        "on-tertiary-fixed": "#301400",
+                        "tertiary-fixed": "#ffdcc5",
+                        "secondary-container": "#3e495d",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#34343d",
+                        "on-secondary-container": "#aeb9d0",
+                        "on-tertiary": "#4f2500",
+                        "tertiary-container": "#d97721",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "outline": "#908fa0",
+                        "inverse-primary": "#494bd6",
+                        "surface-container": "#1f1f27",
+                        "on-primary-fixed": "#07006c",
+                        "on-tertiary-container": "#452000",
+                        "outline-variant": "#464554"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "sidebar-width": "260px",
+                        "xl": "48px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-code": ["JetBrains Mono"],
+                        "body-main": ["Inter"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-code": ["14px", { "lineHeight": "1.7", "fontWeight": "450" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "h1": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom Scrollbar for IDE feel */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #34343d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #464554; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-main text-body-main h-screen overflow-hidden flex antialiased">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-full overflow-y-auto bg-surface-container-lowest border-r border-outline-variant w-[260px] flex-shrink-0">
+<!-- Header -->
+<div class="p-md flex items-center gap-md border-b border-outline-variant/50 mb-md">
+<div class="w-10 h-10 rounded-lg overflow-hidden bg-surface-container border border-outline-variant flex-shrink-0">
+<img alt="User profile photo" class="w-full h-full object-cover opacity-80" data-alt="A sleek, minimalist digital avatar with a deep indigo and stark white color palette, fitting an AI coding mentor interface. The lighting is soft and directional, emphasizing a clean, modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_ULPs4YAOSn44Sot67TdVChLOq1aMj1fisqK1MMdRfUYhU8wusU7obBBUzNHgZJziErCGi7NI12rZSeBPuOvwI9wIVZgkI-mGTd5zJ0l_DX5FOXWDwAk2jUSnc2u3nMUyNvQsn7Fg6U3MhLZYIhd3qK4hqX5KmgBhLLPrlq0TigMdemaZBsEiQj_9nCmPjN8UePyX3NINiOAaBAIVPZEz_ukcYYIZuaxr6pvsg1Liqp-044Fz8ml0ryE1UGd3jeN1DJ-FwD5sjmvQ"/>
+</div>
+<div class="flex flex-col">
+<span class="font-h2 text-h2 font-bold text-primary-fixed-dim">DeepTutor</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">AI Coding Mentor</span>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-md mb-lg">
+<button class="w-full bg-primary text-on-primary font-body-main text-body-main font-bold py-sm rounded border border-transparent hover:brightness-110 transition-all duration-200 flex justify-center items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Session
+            </button>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 px-sm flex flex-col gap-xs">
+<!-- Chat (Inactive) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-body-main text-body-main">Chat</span>
+</a>
+<!-- Exercises (Active) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-primary-fixed-dim font-bold bg-primary-container/10 border-r-2 border-primary scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">exercise</span>
+<span class="font-body-main text-body-main">Exercises</span>
+</a>
+<!-- Progress (Inactive) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-body-main text-body-main">Progress</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-main text-body-main">Settings</span>
+</a>
+</div>
+<!-- Footer Tabs -->
+<div class="p-sm flex flex-col gap-xs border-t border-outline-variant/50 mt-auto">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-main text-body-main">Help</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-main text-body-main">Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-background relative">
+<!-- TopAppBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-lg h-16 bg-surface-dim border-b border-outline-variant flex-shrink-0">
+<!-- Navigation Links -->
+<nav class="flex gap-lg h-full items-center">
+<a class="font-body-main text-body-main text-on-surface-variant hover:text-on-surface transition-colors" href="#">Workspace</a>
+<a class="font-body-main text-body-main text-on-surface-variant hover:text-on-surface transition-colors" href="#">Documentation</a>
+<a class="font-body-main text-body-main text-on-surface-variant hover:text-on-surface transition-colors" href="#">History</a>
+</nav>
+<!-- Trailing Icons -->
+<div class="flex gap-sm items-center text-on-surface-variant">
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-highest flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-highest flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-highest flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Content Layout (Main + Right Sidebar) -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Center Content (Exercise Grid) -->
+<main class="flex-1 overflow-y-auto p-lg lg:p-xl">
+<!-- Page Header & Filters -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface mb-xs">Coding Challenges</h1>
+<p class="font-body-main text-body-main text-on-surface-variant">Master core concepts through structured practice.</p>
+</div>
+<!-- Search & Filter Controls -->
+<div class="flex gap-md w-full md:w-auto">
+<div class="relative flex-1 md:w-64">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container border border-outline-variant rounded py-sm pl-xl pr-sm font-body-main text-body-main text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline-variant" placeholder="Search exercises..." type="text"/>
+</div>
+<button class="px-md py-sm rounded border border-outline-variant text-on-surface hover:bg-surface-container-highest flex items-center gap-xs font-label-caps text-label-caps transition-colors">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+                            Filter
+                        </button>
+</div>
+</div>
+<!-- Exercise Grid (Bento/Card Style) -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-md">
+<!-- Card 1: Completed -->
+<article class="bg-surface-container rounded-lg border border-outline-variant p-md flex flex-col relative overflow-hidden group hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-md">
+<div class="flex gap-xs">
+<span class="bg-secondary-container text-on-secondary-container rounded-full px-sm py-[2px] font-label-caps text-label-caps">Beginner</span>
+<span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">Arrays</span>
+</div>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;" title="Completed">check_circle</span>
+</div>
+<h2 class="font-h2 text-h2 text-on-surface mb-sm">Two Sum</h2>
+<p class="font-body-main text-body-main text-on-surface-variant line-clamp-2 mb-lg flex-1">
+                            Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+                        </p>
+<div class="flex items-center justify-between border-t border-outline-variant/50 pt-md mt-auto">
+<span class="font-body-code text-body-code text-outline flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">schedule</span> 15 mins
+                            </span>
+<button class="bg-transparent border border-outline-variant text-on-surface rounded font-label-caps text-label-caps px-md py-sm hover:bg-surface-container-high transition-colors">
+                                Review Code
+                            </button>
+</div>
+</article>
+<!-- Card 2: Available/Not Started -->
+<article class="bg-surface-container rounded-lg border border-outline-variant p-md flex flex-col relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 group-hover:bg-primary transition-colors"></div>
+<div class="flex justify-between items-start mb-md pl-xs">
+<div class="flex gap-xs">
+<span class="bg-tertiary-container/30 text-tertiary-fixed-dim border border-tertiary-container rounded-full px-sm py-[2px] font-label-caps text-label-caps">Intermediate</span>
+<span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">Linked List</span>
+</div>
+</div>
+<h2 class="font-h2 text-h2 text-on-surface mb-sm pl-xs">Reverse Linked List</h2>
+<p class="font-body-main text-body-main text-on-surface-variant line-clamp-2 mb-lg flex-1 pl-xs">
+                            Given the head of a singly linked list, reverse the list, and return the reversed list. Implement both iterative and recursive solutions.
+                        </p>
+<div class="flex items-center justify-between border-t border-outline-variant/50 pt-md mt-auto pl-xs">
+<span class="font-body-code text-body-code text-outline flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">schedule</span> 30 mins
+                            </span>
+<button class="bg-primary text-on-primary rounded font-label-caps text-label-caps px-md py-sm hover:brightness-110 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                                Try exercise
+                            </button>
+</div>
+</article>
+<!-- Card 3: Locked -->
+<article class="bg-surface-container-lowest rounded-lg border border-outline-variant/50 p-md flex flex-col relative overflow-hidden opacity-75">
+<div class="flex justify-between items-start mb-md">
+<div class="flex gap-xs opacity-50">
+<span class="bg-secondary-container text-on-secondary-container rounded-full px-sm py-[2px] font-label-caps text-label-caps">Advanced</span>
+<span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">Dynamic Programming</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant" title="Locked">lock</span>
+</div>
+<h2 class="font-h2 text-h2 text-on-surface-variant mb-sm">Longest Palindromic Substring</h2>
+<p class="font-body-main text-body-main text-outline-variant line-clamp-2 mb-lg flex-1">
+                            Given a string s, return the longest palindromic substring in s. Complete prerequisite exercises to unlock.
+                        </p>
+<div class="flex items-center justify-between border-t border-outline-variant/30 pt-md mt-auto">
+<span class="font-body-code text-body-code text-outline-variant/50 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">lock_clock</span> Prerequisite needed
+                            </span>
+<button class="bg-surface-container border border-outline-variant text-outline-variant rounded font-label-caps text-label-caps px-md py-sm cursor-not-allowed">
+                                Locked
+                            </button>
+</div>
+</article>
+<!-- Card 4: Available -->
+<article class="bg-surface-container rounded-lg border border-outline-variant p-md flex flex-col relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-md">
+<div class="flex gap-xs">
+<span class="bg-tertiary-container/30 text-tertiary-fixed-dim border border-tertiary-container rounded-full px-sm py-[2px] font-label-caps text-label-caps">Intermediate</span>
+<span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">Trees</span>
+</div>
+</div>
+<h2 class="font-h2 text-h2 text-on-surface mb-sm">Binary Tree Level Order Traversal</h2>
+<p class="font-body-main text-body-main text-on-surface-variant line-clamp-2 mb-lg flex-1">
+                            Given the root of a binary tree, return the level order traversal of its nodes' values. (i.e., from left to right, level by level).
+                        </p>
+<div class="flex items-center justify-between border-t border-outline-variant/50 pt-md mt-auto">
+<span class="font-body-code text-body-code text-outline flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">schedule</span> 45 mins
+                            </span>
+<button class="bg-primary text-on-primary rounded font-label-caps text-label-caps px-md py-sm hover:brightness-110 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                                Try exercise
+                            </button>
+</div>
+</article>
+</div>
+</main>
+<!-- Right Sidebar (Recommendations) -->
+<aside class="hidden lg:flex flex-col w-[320px] bg-surface-dim border-l border-outline-variant overflow-y-auto p-md flex-shrink-0">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-tertiary-fixed-dim">auto_awesome</span>
+<h3 class="font-h2 text-h2 text-on-surface">Recommended for you</h3>
+</div>
+<p class="font-body-main text-body-main text-on-surface-variant mb-md text-[14px]">
+                    Based on your recent progress in <span class="text-primary-fixed-dim font-body-code">Arrays</span>, we suggest tackling these next:
+                </p>
+<div class="flex flex-col gap-md">
+<!-- Rec Card 1 -->
+<div class="bg-surface-container hover:bg-surface-container-high rounded border border-outline-variant p-sm cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">Next Step</span>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">arrow_forward</span>
+</div>
+<h4 class="font-body-main text-body-main font-bold text-on-surface mb-xs">Container With Most Water</h4>
+<div class="flex gap-xs items-center">
+<span class="bg-tertiary-container/30 text-tertiary-fixed-dim rounded-full px-sm py-[2px] font-label-caps text-label-caps text-[10px]">Intermediate</span>
+<span class="font-body-code text-body-code text-outline-variant text-[12px] flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 35m
+                            </span>
+</div>
+</div>
+<!-- Rec Card 2 -->
+<div class="bg-surface-container hover:bg-surface-container-high rounded border border-outline-variant p-sm cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Review Needed</span>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">arrow_forward</span>
+</div>
+<h4 class="font-body-main text-body-main font-bold text-on-surface mb-xs">Valid Parentheses</h4>
+<div class="flex gap-xs items-center">
+<span class="bg-secondary-container text-on-secondary-container rounded-full px-sm py-[2px] font-label-caps text-label-caps text-[10px]">Beginner</span>
+<span class="font-body-code text-body-code text-outline-variant text-[12px] flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 15m
+                            </span>
+</div>
+</div>
+<!-- Decorative Graphic/Nudge -->
+<div class="mt-lg p-md bg-gradient-to-br from-surface-container to-primary-container/10 rounded-lg border border-primary/20 text-center">
+<span class="material-symbols-outlined text-primary text-h1 mb-sm">local_fire_department</span>
+<h5 class="font-body-main text-body-main font-bold text-on-surface mb-xs">3 Day Streak!</h5>
+<p class="font-body-code text-body-code text-on-surface-variant text-[12px]">Complete one more exercise today to keep your streak alive.</p>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</body></html>

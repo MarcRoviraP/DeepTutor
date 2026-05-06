@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Code Analysis - DeepTutor</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@450&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "on-primary": "#1000a9",
+                        "on-primary-container": "#0d0096",
+                        "secondary": "#bcc7de",
+                        "secondary-container": "#3e495d",
+                        "tertiary": "#ffb783",
+                        "background": "#13131b",
+                        "surface": "#13131b",
+                        "surface-container": "#1f1f27",
+                        "surface-container-low": "#1b1b23",
+                        "surface-container-high": "#292932",
+                        "on-surface": "#e4e1ed",
+                        "on-surface-variant": "#c7c4d7",
+                        "outline": "#908fa0",
+                        "outline-variant": "#464554",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#393841",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #13131b; color: #e4e1ed; }
+        .syntax-keyword { color: #8083ff; }
+        .syntax-string { color: #ffb783; }
+        .syntax-function { color: #bcc7de; }
+        .syntax-comment { color: #908fa0; }
+        .editor-line-number { color: #464554; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+    <!-- SideNavBar -->
+    <nav class="bg-surface-container-low border-r border-outline-variant w-[260px] flex flex-col shrink-0">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">terminal</span></div>
+                <div><h1 class="text-xl font-bold text-primary">DeepTutor</h1></div>
+            </div>
+            <ul class="flex flex-col gap-1">
+                <li><a href="chat.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">forum</span><span>Chat</span></a></li>
+                <li><a href="exercises.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">exercise</span><span>Exercises</span></a></li>
+                <li><a href="editor.html" class="flex items-center gap-4 px-4 py-2 rounded text-primary font-bold bg-primary-container/10 border-r-2 border-primary"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">code</span><span>Editor</span></a></li>
+            </ul>
+        </div>
+        <div class="mt-auto p-6 border-t border-outline-variant">
+            <a href="index.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">home</span><span>Dashboard</span></a>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex flex-col min-w-0">
+        <header class="bg-surface border-b border-outline-variant flex justify-between items-center px-8 h-16 shrink-0">
+            <div class="flex gap-8 h-full items-center">
+                <span class="text-primary font-bold border-b-2 border-primary">Workspace</span>
+                <span class="text-on-surface-variant">Documentation</span>
+            </div>
+        </header>
+
+        <main class="flex-1 flex overflow-hidden p-8 gap-8">
+            <div class="flex-1 flex flex-col bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-sm">
+                <div class="h-12 bg-surface-container-low border-b border-outline-variant flex items-center justify-between px-4 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-tertiary text-lg">data_object</span>
+                        <span class="font-mono text-sm">data_processor.py</span>
+                        <span class="px-2 py-0.5 rounded bg-surface-bright text-[10px] font-bold text-on-surface-variant border border-outline-variant">PYTHON</span>
+                    </div>
+                    <button class="bg-primary text-on-primary hover:brightness-110 px-4 py-1.5 rounded text-[10px] font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span> RUN ANALYSIS
+                    </button>
+                </div>
+                <div class="flex-1 overflow-auto flex font-mono text-sm">
+                    <div class="w-12 bg-surface-container-lowest border-r border-outline-variant flex flex-col items-end py-4 pr-3 editor-line-number select-none shrink-0">
+                        <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+                        <div class="text-error font-bold relative w-full text-right">
+                            <div class="absolute inset-0 bg-error/10 border-l-2 border-error -ml-8 w-[200vw] pointer-events-none"></div>
+                            7
+                        </div>
+                        <div>8</div><div>9</div><div>10</div>
+                    </div>
+                    <div class="p-4 whitespace-pre flex-1 text-on-surface">
+<span class="syntax-keyword">import</span> pandas <span class="syntax-keyword">as</span> pd
+<span class="syntax-keyword">import</span> numpy <span class="syntax-keyword">as</span> np
+
+<span class="syntax-keyword">def</span> <span class="syntax-function">process_user_data</span>(filepath):
+    <span class="syntax-comment"># Load the dataset</span>
+    df <span class="syntax-punctuation">=</span> pd.read_csv(filepath)
+    
+<span class="relative z-10">    <span class="syntax-comment"># Calculate average age (Bug here: 'Age' column doesn't exist)</span></span>
+<span class="relative z-10">    avg_age <span class="syntax-punctuation">=</span> df[<span class="syntax-string">'Age'</span>].mean()</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-[400px] flex flex-col gap-6 shrink-0">
+                <h2 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">analytics</span> Analysis Results</h2>
+                <div class="bg-surface-container border border-error/30 rounded-lg p-6 relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+                    <h3 class="font-bold text-error mb-1">KeyError: 'Age'</h3>
+                    <p class="text-xs text-on-surface-variant mb-4">Line 8: avg_age = df['Age'].mean()</p>
+                    <div class="bg-surface-container-lowest rounded p-4 mb-4 border border-outline-variant text-sm">
+                        The column <span class="bg-surface-variant px-1 rounded text-primary">'Age'</span> does not exist. Likely named <span class="bg-surface-variant px-1 rounded text-primary">'user_age'</span>.
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-surface-container-high border border-outline-variant py-2 rounded text-[10px] font-bold flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors">
+                            <span class="material-symbols-outlined text-sm">check</span> APPLY FIX
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

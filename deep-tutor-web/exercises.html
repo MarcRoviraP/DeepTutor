@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Coding Challenges - DeepTutor</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@450&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "on-primary": "#1000a9",
+                        "on-primary-container": "#0d0096",
+                        "secondary": "#bcc7de",
+                        "secondary-container": "#3e495d",
+                        "on-secondary": "#263143",
+                        "on-secondary-container": "#aeb9d0",
+                        "tertiary": "#ffb783",
+                        "tertiary-container": "#d97721",
+                        "on-tertiary": "#4f2500",
+                        "on-tertiary-container": "#452000",
+                        "background": "#13131b",
+                        "on-background": "#e4e1ed",
+                        "surface": "#13131b",
+                        "on-surface": "#e4e1ed",
+                        "surface-variant": "#34343d",
+                        "on-surface-variant": "#c7c4d7",
+                        "outline": "#908fa0",
+                        "outline-variant": "#464554",
+                        "surface-container-lowest": "#0d0d15",
+                        "surface-container-low": "#1b1b23",
+                        "surface-container": "#1f1f27",
+                        "surface-container-high": "#292932",
+                        "surface-container-highest": "#34343d"
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #13131b; color: #e4e1ed; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #34343d; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+    <!-- SideNavBar -->
+    <nav class="bg-surface-container-low border-r border-outline-variant w-[260px] flex flex-col shrink-0">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-primary">DeepTutor</h1>
+                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">AI Coding Mentor</p>
+                </div>
+            </div>
+            
+            <ul class="flex flex-col gap-1">
+                <li><a href="chat.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">forum</span><span>Chat</span></a></li>
+                <li><a href="exercises.html" class="flex items-center gap-4 px-4 py-2 rounded text-primary font-bold bg-primary-container/10 border-r-2 border-primary"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">exercise</span><span>Exercises</span></a></li>
+                <li><a href="editor.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">code</span><span>Editor</span></a></li>
+                <li><a href="progress.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">monitoring</span><span>Progress</span></a></li>
+            </ul>
+        </div>
+        <div class="mt-auto p-6 border-t border-outline-variant">
+            <a href="index.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">home</span><span>Dashboard</span></a>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex flex-col min-w-0">
+        <header class="bg-surface border-b border-outline-variant flex justify-between items-center px-8 h-16 shrink-0">
+            <h2 class="text-xl font-bold">Coding Challenges</h2>
+            <div class="flex items-center gap-4">
+                <div class="relative w-64">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                    <input type="text" class="w-full bg-surface-container border border-outline-variant rounded py-1.5 pl-10 pr-3 text-sm focus:outline-none focus:border-primary" placeholder="Search exercises...">
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <!-- Card 1 -->
+                <article class="bg-surface-container rounded-lg border border-outline-variant p-6 flex flex-col relative overflow-hidden group hover:border-outline transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex gap-2">
+                            <span class="bg-secondary-container text-on-secondary-container rounded-full px-3 py-1 text-[10px] font-bold uppercase">Beginner</span>
+                            <span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-3 py-1 text-[10px] font-bold uppercase">Arrays</span>
+                        </div>
+                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Two Sum</h3>
+                    <p class="text-on-surface-variant text-sm line-clamp-2 mb-6">Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.</p>
+                    <div class="flex items-center justify-between border-t border-outline-variant/30 pt-4 mt-auto">
+                        <span class="text-xs text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> 15 mins</span>
+                        <button class="bg-surface-container-high border border-outline-variant text-on-surface rounded text-xs font-bold px-4 py-2 hover:bg-surface-bright transition-colors">Review Code</button>
+                    </div>
+                </article>
+                <!-- Card 2 -->
+                <article class="bg-surface-container rounded-lg border border-outline-variant p-6 flex flex-col relative overflow-hidden group hover:border-primary/50 transition-all">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex gap-2">
+                            <span class="bg-tertiary-container/30 text-tertiary-fixed-dim border border-tertiary-container rounded-full px-3 py-1 text-[10px] font-bold uppercase">Intermediate</span>
+                            <span class="bg-surface-container-high border border-outline-variant text-on-surface-variant rounded-full px-3 py-1 text-[10px] font-bold uppercase">Linked List</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Reverse Linked List</h3>
+                    <p class="text-on-surface-variant text-sm line-clamp-2 mb-6">Given the head of a singly linked list, reverse the list, and return the reversed list. Implement both iterative and recursive solutions.</p>
+                    <div class="flex items-center justify-between border-t border-outline-variant/30 pt-4 mt-auto">
+                        <span class="text-xs text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> 30 mins</span>
+                        <a href="editor.html" class="bg-primary text-on-primary rounded text-xs font-bold px-4 py-2 hover:brightness-110 transition-all">Try Exercise</a>
+                    </div>
+                </article>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

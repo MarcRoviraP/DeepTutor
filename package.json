@@ -4,11 +4,12 @@
   "description": "Avatar 3D con TTS local",
   "private": true,
   "scripts": {
-    "dev":   "vite",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "three": "^0.160.0"
   },
   "devDependencies": {

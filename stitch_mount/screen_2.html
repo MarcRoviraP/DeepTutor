@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Code Analysis - DeepTutor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@450&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#ffb783",
+                        "on-primary-container": "#0d0096",
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "surface-container-highest": "#34343d",
+                        "on-secondary": "#263143",
+                        "background": "#13131b",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "primary": "#c0c1ff",
+                        "on-secondary-fixed": "#111c2d",
+                        "primary-fixed": "#e1e0ff",
+                        "surface": "#13131b",
+                        "inverse-surface": "#e4e1ed",
+                        "secondary-fixed": "#d8e3fb",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "on-surface": "#e4e1ed",
+                        "surface-container-low": "#1b1b23",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "surface-bright": "#393841",
+                        "inverse-on-surface": "#303038",
+                        "secondary": "#bcc7de",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-primary": "#1000a9",
+                        "surface-dim": "#13131b",
+                        "on-tertiary-fixed": "#301400",
+                        "tertiary-fixed": "#ffdcc5",
+                        "secondary-container": "#3e495d",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#34343d",
+                        "on-secondary-container": "#aeb9d0",
+                        "on-tertiary": "#4f2500",
+                        "tertiary-container": "#d97721",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "outline": "#908fa0",
+                        "inverse-primary": "#494bd6",
+                        "surface-container": "#1f1f27",
+                        "on-primary-fixed": "#07006c",
+                        "on-tertiary-container": "#452000",
+                        "outline-variant": "#464554"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "sidebar-width": "260px",
+                        "xl": "48px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-code": ["JetBrains Mono"],
+                        "body-main": ["Inter"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-code": ["14px", { "lineHeight": "1.7", "fontWeight": "450" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "h1": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .syntax-keyword { color: #8083ff; } /* primary-container */
+        .syntax-string { color: #ffb783; } /* tertiary */
+        .syntax-function { color: #bcc7de; } /* secondary */
+        .syntax-comment { color: #908fa0; } /* outline */
+        .syntax-punctuation { color: #c7c4d7; } /* on-surface-variant */
+        .editor-line-number { color: #464554; } /* outline-variant */
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-main h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant docked left-0 h-full w-[sidebar-width] flex flex-col overflow-y-auto shrink-0 z-20">
+<div class="p-lg">
+<div class="flex items-center gap-md mb-xl">
+<div class="w-10 h-10 rounded-DEFAULT bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="font-h2 text-h2 font-bold text-primary dark:text-primary-fixed-dim">DeepTutor</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">AI Coding Mentor</p>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary rounded-DEFAULT py-md px-md flex items-center justify-center gap-sm hover:brightness-110 transition-colors duration-200 mb-xl font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">add</span>
+                New Session
+            </button>
+<ul class="flex flex-col gap-unit">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200 Active: scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span>Chat</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-primary dark:text-primary-fixed-dim font-bold bg-primary-container/10 border-r-2 border-primary Active: scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">exercise</span>
+<span>Exercises</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200 Active: scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>Progress</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200 Active: scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mt-auto p-lg border-t border-outline-variant">
+<ul class="flex flex-col gap-unit">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Help</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col h-full min-w-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top-0 flex justify-between items-center w-full px-lg h-16 shrink-0 border-b border-outline-variant z-10">
+<nav class="flex gap-lg h-full">
+<a class="flex items-center text-primary font-bold border-b-2 border-primary pb-1 h-full hover:text-on-surface transition-colors" href="#">Workspace</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors h-full" href="#">Documentation</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors h-full" href="#">History</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-sm rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-sm rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-sm rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Workspace Canvas -->
+<main class="flex-1 flex overflow-hidden bg-background p-lg gap-lg">
+<!-- Editor Panel -->
+<div class="flex-1 flex flex-col bg-surface-container border border-outline-variant rounded-lg overflow-hidden flex shadow-sm">
+<!-- Editor Header -->
+<div class="h-12 bg-surface-container-low border-b border-outline-variant flex items-center justify-between px-md shrink-0">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary text-[18px]">data_object</span>
+<span class="font-body-code text-body-code text-on-surface">data_processor.py</span>
+<span class="ml-sm px-sm py-unit rounded-DEFAULT bg-surface-bright text-on-surface-variant font-label-caps text-label-caps border border-outline-variant">Python</span>
+</div>
+<button class="bg-primary text-on-primary hover:brightness-110 transition-colors px-md py-sm rounded-DEFAULT flex items-center gap-sm font-label-caps text-label-caps border border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        Run Analysis
+                    </button>
+</div>
+<!-- Editor Content -->
+<div class="flex-1 overflow-auto bg-surface-container flex font-body-code text-body-code">
+<!-- Line Numbers -->
+<div class="w-12 bg-surface-container-lowest border-r border-outline-variant flex flex-col items-end py-md pr-sm editor-line-number select-none shrink-0">
+<div>1</div>
+<div>2</div>
+<div>3</div>
+<div>4</div>
+<div>5</div>
+<div>6</div>
+<div class="text-error font-bold relative w-full text-right">
+<div class="absolute inset-0 bg-error/10 border-l-2 border-error -ml-[30px] w-[200vw] pointer-events-none"></div>
+                            7
+                        </div>
+<div>8</div>
+<div>9</div>
+<div>10</div>
+<div>11</div>
+<div>12</div>
+<div>13</div>
+<div>14</div>
+<div>15</div>
+</div>
+<!-- Code Area -->
+<div class="p-md whitespace-pre overflow-x-auto flex-1 text-on-surface">
+<span class="syntax-keyword">import</span> pandas <span class="syntax-keyword">as</span> pd
+<span class="syntax-keyword">import</span> numpy <span class="syntax-keyword">as</span> np
+
+<span class="syntax-keyword">def</span> <span class="syntax-function">process_user_data</span>(filepath):
+    <span class="syntax-comment"># Load the dataset</span>
+    df <span class="syntax-punctuation">=</span> pd.read_csv(filepath)
+    
+<span class="relative z-10"><span class="syntax-comment">    # Calculate average age (Bug here: 'Age' column doesn't exist, it's 'user_age')</span></span>
+<span class="relative z-10">    avg_age <span class="syntax-punctuation">=</span> df[<span class="syntax-string">'Age'</span>].mean()</span>
+<span class="syntax-comment"># Filter active users</span>
+    active_users <span class="syntax-punctuation">=</span> df[df[<span class="syntax-string">'status'</span>] <span class="syntax-punctuation">==</span> <span class="syntax-string">'active'</span>]
+    
+    <span class="syntax-keyword">return</span> {
+        <span class="syntax-string">'average_age'</span>: avg_age,
+        <span class="syntax-string">'active_count'</span>: <span class="syntax-function">len</span>(active_users)
+    }</div>
+</div>
+</div>
+<!-- Feedback Panel -->
+<div class="w-[400px] flex flex-col gap-md shrink-0 overflow-y-auto">
+<h2 class="font-h2 text-h2 text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                    Analysis Results
+                </h2>
+<!-- Error Card -->
+<div class="bg-surface-container border border-error/30 rounded-lg p-md shadow-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex items-start gap-md mb-md">
+<span class="material-symbols-outlined text-error mt-unit">error</span>
+<div>
+<h3 class="font-body-main text-body-main font-bold text-error mb-unit">KeyError: 'Age'</h3>
+<p class="font-body-code text-body-code text-on-surface-variant text-[12px]">Line 8: avg_age = df['Age'].mean()</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-DEFAULT p-md mb-md border border-outline-variant">
+<p class="font-body-main text-body-main text-on-surface text-sm mb-sm">
+                            The column <span class="font-body-code text-body-code bg-surface-variant px-unit rounded text-primary-fixed-dim">'Age'</span> does not exist in the loaded DataFrame. 
+                        </p>
+<p class="font-body-main text-body-main text-on-surface-variant text-sm">
+                            Looking at your schema definition, the column is likely named <span class="font-body-code text-body-code bg-surface-variant px-unit rounded text-primary-fixed-dim">'user_age'</span>.
+                        </p>
+</div>
+<div class="mb-md">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-sm uppercase tracking-wider">Suggested Fix</h4>
+<div class="bg-[#1e293b] rounded-DEFAULT border border-outline-variant p-sm font-body-code text-body-code text-[13px] overflow-x-auto relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="text-error line-through opacity-70 ml-sm">- avg_age = df['Age'].mean()</span><br/>
+<span class="text-tertiary-fixed ml-sm">+ avg_age = df['user_age'].mean()</span>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="flex-1 bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-caps text-label-caps py-sm rounded-DEFAULT border border-outline-variant transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                            Apply Fix
+                        </button>
+<button class="flex-1 bg-transparent hover:bg-surface-container-high text-on-surface font-label-caps text-label-caps py-sm rounded-DEFAULT border border-outline-variant transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">forum</span>
+                            Explain Why
+                        </button>
+</div>
+</div>
+<!-- Info Card -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-md shadow-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex items-start gap-md">
+<span class="material-symbols-outlined text-secondary mt-unit">info</span>
+<div>
+<h3 class="font-body-main text-body-main font-bold text-on-surface mb-unit">Optimization Hint</h3>
+<p class="font-body-main text-body-main text-on-surface-variant text-sm">
+                                Consider handling potential missing values in the dataset before calculating the mean using <span class="font-body-code text-body-code bg-surface-variant px-unit rounded text-secondary-fixed-dim">dropna()</span> or <span class="font-body-code text-body-code bg-surface-variant px-unit rounded text-secondary-fixed-dim">fillna()</span>.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

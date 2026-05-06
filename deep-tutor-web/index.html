@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>DeepTutor - AI Learning Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@450&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0" rel="stylesheet"/>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#ffb783",
+                        "on-primary-container": "#0d0096",
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "surface-container-highest": "#34343d",
+                        "on-secondary": "#263143",
+                        "background": "#13131b",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "primary": "#c0c1ff",
+                        "on-secondary-fixed": "#111c2d",
+                        "primary-fixed": "#e1e0ff",
+                        "surface": "#13131b",
+                        "inverse-surface": "#e4e1ed",
+                        "secondary-fixed": "#d8e3fb",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "on-surface": "#e4e1ed",
+                        "surface-container-low": "#1b1b23",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "surface-bright": "#393841",
+                        "inverse-on-surface": "#303038",
+                        "secondary": "#bcc7de",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-primary": "#1000a9",
+                        "surface-dim": "#13131b",
+                        "on-tertiary-fixed": "#301400",
+                        "tertiary-fixed": "#ffdcc5",
+                        "secondary-container": "#3e495d",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#34343d",
+                        "on-secondary-container": "#aeb9d0",
+                        "on-tertiary": "#4f2500",
+                        "tertiary-container": "#d97721",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "outline": "#908fa0",
+                        "inverse-primary": "#494bd6",
+                        "surface-container": "#1f1f27",
+                        "on-primary-fixed": "#07006c",
+                        "on-tertiary-container": "#452000",
+                        "outline-variant": "#464554"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "container-max": "1280px",
+                        "sidebar-width": "260px",
+                        "xl": "48px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    fontFamily: {
+                        "body-code": ["JetBrains Mono"],
+                        "body-main": ["Inter"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "label-caps": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-screen flex overflow-hidden bg-background text-on-surface font-['Inter']">
+    <!-- Sidebar -->
+    <nav class="bg-surface-container-low border-r border-outline-variant w-[260px] flex flex-col shrink-0 z-20">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-primary">DeepTutor</h1>
+                    <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">AI Coding Mentor</p>
+                </div>
+            </div>
+            
+            <ul class="flex flex-col gap-1">
+                <li>
+                    <a href="#/dashboard" data-route="dashboard" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#/chat" data-route="chat" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined">forum</span>
+                        <span>AI Mentor</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#/exercises" data-route="exercises" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined">exercise</span>
+                        <span>Exercises</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#/progress" data-route="progress" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined">monitoring</span>
+                        <span>Progress</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="mt-auto p-6 border-t border-outline-variant">
+            <ul class="flex flex-col gap-1">
+                <li><a href="#" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high"><span class="material-symbols-outlined">help</span><span>Help</span></a></li>
+                <li><a href="#" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high"><span class="material-symbols-outlined">logout</span><span>Logout</span></a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+        <header class="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-8 h-16 shrink-0 z-10">
+            <div class="flex gap-8 items-center h-full">
+                <span id="page-title" class="text-sm font-bold text-primary tracking-widest uppercase">Dashboard</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="text-on-surface-variant hover:text-on-surface transition-colors p-2 rounded-full hover:bg-surface-container-high">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-surface-variant text-xl">account_circle</span>
+                </div>
+            </div>
+        </header>
+
+        <main id="app-content" class="flex-1 overflow-y-auto p-8 relative">
+            <!-- Dynamic Content -->
+        </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

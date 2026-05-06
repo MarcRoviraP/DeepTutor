@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AI Chat Mentor - DeepTutor</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@450&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#c0c1ff",
+                        "primary-container": "#8083ff",
+                        "on-primary": "#1000a9",
+                        "background": "#13131b",
+                        "surface": "#13131b",
+                        "surface-container": "#1f1f27",
+                        "surface-container-low": "#1b1b23",
+                        "surface-container-high": "#292932",
+                        "on-surface": "#e4e1ed",
+                        "on-surface-variant": "#c7c4d7",
+                        "outline": "#908fa0",
+                        "outline-variant": "#464554",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #13131b; color: #e4e1ed; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #34343d; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+    <!-- SideNavBar -->
+    <nav class="bg-surface-container-low border-r border-outline-variant w-[260px] flex flex-col shrink-0">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">terminal</span></div>
+                <div><h1 class="text-xl font-bold text-primary">DeepTutor</h1></div>
+            </div>
+            <ul class="flex flex-col gap-1">
+                <li><a href="chat.html" class="flex items-center gap-4 px-4 py-2 rounded text-primary font-bold bg-primary-container/10 border-r-2 border-primary"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span><span>Chat</span></a></li>
+                <li><a href="exercises.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">exercise</span><span>Exercises</span></a></li>
+                <li><a href="editor.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">code</span><span>Editor</span></a></li>
+            </ul>
+        </div>
+        <div class="mt-auto p-6 border-t border-outline-variant">
+            <a href="index.html" class="flex items-center gap-4 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">home</span><span>Dashboard</span></a>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex flex-col min-w-0 bg-surface">
+        <header class="bg-surface border-b border-outline-variant flex items-center px-8 h-16 shrink-0">
+            <h2 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">forum</span> AI Mentor Chat</h2>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-8 flex flex-col gap-8">
+            <div class="max-w-3xl mx-auto w-full flex flex-col gap-6">
+                <!-- User Message -->
+                <div class="flex flex-col items-end gap-2">
+                    <div class="bg-primary-container text-on-primary-container p-4 rounded-xl rounded-tr-none max-w-[80%] shadow-sm">
+                        I'm trying to understand how to implement a basic React hook for fetching data. Can you show me an example?
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">You • 2:45 PM</span>
+                </div>
+
+                <!-- AI Response -->
+                <div class="flex gap-4 items-start">
+                    <div class="w-8 h-8 rounded bg-primary flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-on-primary text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                    </div>
+                    <div class="flex flex-col gap-2 flex-1">
+                        <div class="bg-surface-container border border-outline-variant p-6 rounded-xl rounded-tl-none shadow-sm flex flex-col gap-4">
+                            <p class="text-on-surface leading-relaxed">
+                                Certainly! A custom React hook for data fetching is a great way to encapsulate state and side effects. Here's a structured approach to building a robust <code class="bg-surface-container-highest px-1 rounded text-primary">useFetch</code> hook.
+                            </p>
+                            
+                            <div class="flex flex-col gap-2">
+                                <h4 class="font-bold text-sm text-tertiary">Key Concepts:</h4>
+                                <ul class="list-disc list-inside text-sm text-on-surface-variant space-y-1">
+                                    <li>State Management: Track data, loading, and errors.</li>
+                                    <li>Side Effects: <code class="text-primary">useEffect</code> triggers on URL change.</li>
+                                    <li>Cleanup: Prevent memory leaks.</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden font-mono text-xs">
+                                <div class="bg-surface-container-low px-4 py-2 border-b border-outline-variant flex justify-between">
+                                    <span class="text-on-surface-variant uppercase font-bold tracking-tighter">useFetch.js</span>
+                                    <span class="text-primary">Copy</span>
+                                </div>
+                                <div class="p-4 overflow-x-auto">
+<pre class="text-on-surface">
+<span class="text-primary">import</span> { useState, useEffect } <span class="text-primary">from</span> 'react';
+
+<span class="text-primary">export const</span> <span class="text-tertiary">useFetch</span> = (url) => {
+  <span class="text-primary">const</span> [data, setData] = useState(<span class="text-tertiary">null</span>);
+  <span class="text-primary">const</span> [loading, setLoading] = useState(<span class="text-tertiary">true</span>);
+  <span class="text-primary">const</span> [error, setError] = setError(<span class="text-tertiary">null</span>);
+
+  useEffect(() => {
+    <span class="text-outline">let</span> isMounted = <span class="text-tertiary">true</span>;
+    <span class="text-primary">const</span> fetchData = <span class="text-primary">async</span> () => {
+      <span class="text-primary">try</span> {
+        <span class="text-primary">const</span> res = <span class="text-primary">await</span> fetch(url);
+        <span class="text-primary">const</span> json = <span class="text-primary">await</span> res.json();
+        <span class="text-primary">if</span> (isMounted) setData(json);
+      } <span class="text-primary">catch</span> (err) {
+        <span class="text-primary">if</span> (isMounted) setError(err);
+      } <span class="text-primary">finally</span> {
+        <span class="text-primary">if</span> (isMounted) setLoading(<span class="text-tertiary">false</span>);
+      }
+    };
+    fetchData();
+    <span class="text-primary">return</span> () => { isMounted = <span class="text-tertiary">false</span>; };
+  }, [url]);
+
+  <span class="text-primary">return</span> { data, loading, error };
+};</pre>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">AI Mentor • 2:46 PM</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="p-8 border-t border-outline-variant bg-surface">
+            <div class="max-w-3xl mx-auto relative">
+                <input type="text" class="w-full bg-surface-container-high border border-outline-variant rounded-xl py-4 pl-6 pr-14 focus:outline-none focus:border-primary transition-all shadow-lg" placeholder="Ask anything about coding...">
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 bg-primary text-on-primary p-2 rounded-lg hover:brightness-110 transition-all">
+                    <span class="material-symbols-outlined text-lg">send</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
