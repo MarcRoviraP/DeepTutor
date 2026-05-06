@@ -1,18 +1,18 @@
 {
   "name": "deeptutor",
   "version": "1.0.0",
-  "description": "Avatar 3D con TTS local",
+  "description": "Unified DeepTutor - React + Express + PostgreSQL",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "build:client": "cd client && npm run build",
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "start": "npm run build:client && npm run server"
   },
-  "dependencies": {
-    "@react-oauth/google": "^0.13.5",
-    "three": "^0.160.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "vite": "^5.2.0"
+    "concurrently": "^8.2.2"
   }
 }
