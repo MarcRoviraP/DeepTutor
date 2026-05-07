@@ -11,10 +11,15 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  console.log(`[SERVER] ${req.method} ${req.url}`);
+  next();
+});
 
 app.post('/api/auth/google', async (req, res) => {
   const { credential } = req.body;
   console.log('--- Google Auth Attempt ---');
+  console.log('Request body:', JSON.stringify(req.body));
   console.log('Credential received (first 10 chars):', credential ? credential.substring(0, 10) + '...' : 'NONE');
   console.log('Target Client ID (Server):', process.env.GOOGLE_CLIENT_ID);
 

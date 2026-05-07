@@ -38,7 +38,7 @@ function App() {
       // Redirect to main app
       window.location.href = '/dashboard'
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error('Login failed details:', error.response?.data || error.message)
       alert('Error during login. Please try again.')
     } finally {
       setLoading(false)
