@@ -16,8 +16,10 @@ const API_KEY = process.env.DB_API_KEY;
 
 const apiRequest = async (endpoint, method = 'GET', data = null) => {
   const url = `${API_URL}${endpoint}`;
+  const requestId = Math.random().toString(36).substring(7);
   
-  console.log(`[DB-API] Request: ${method} ${url}`);
+  console.log(`[DB-API][${requestId}] Request: ${method} ${url}`);
+  const startTime = Date.now();
   
   const options = {
     method,
@@ -28,31 +30,33 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
   };
 
   if (data) {
-    console.log(`[DB-API] Payload:`, JSON.stringify(data, null, 2));
+    console.log(`[DB-API][${requestId}] Payload:`, JSON.stringify(data, null, 2));
     options.body = JSON.stringify(data);
   }
 
   try {
     const response = await fetch(url, options);
-    console.log(`[DB-API] Response Status: ${response.status} ${response.statusText}`);
+    const duration = Date.now() - startTime;
+    console.log(`[DB-API][${requestId}] Response Status: ${response.status} ${response.statusText} (took ${duration}ms)`);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[DB-API] Error Body:`, errorText);
+      console.error(`[DB-API][${requestId}] Error Body:`, errorText);
       throw new Error(`API Error (${response.status}): ${errorText}`);
     }
 
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       const json = await response.json();
-      console.log(`[DB-API] Success! Data received (${Array.isArray(json) ? json.length + ' items' : 'Object'}).`);
+      console.log(`[DB-API][${requestId}] Success! Data received (${Array.isArray(json) ? json.length + ' items' : 'Object'}).`);
       return json;
     } else {
-      console.log(`[DB-API] Success! No JSON body to return.`);
+      console.log(`[DB-API][${requestId}] Success! No JSON body to return.`);
       return null;
     }
   } catch (error) {
-    console.error(`[DB-API] CRITICAL FAILURE on ${url}:`, error.message);
+    const duration = Date.now() - startTime;
+    console.error(`[DB-API][${requestId}] CRITICAL FAILURE on ${url} (after ${duration}ms):`, error.message);
     throw error;
   }
 };

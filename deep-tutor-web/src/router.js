@@ -63,7 +63,9 @@ class Router {
     }
 
     async renderExercises() {
+        console.log('[ROUTER] Rendering exercises view...');
         const exercises = await api.getExercises();
+        console.log(`[ROUTER] Loaded ${exercises.length} exercises. Updating container.`);
         this.container.innerHTML = Exercises({ exercises });
     }
 

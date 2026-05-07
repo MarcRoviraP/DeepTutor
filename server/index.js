@@ -93,6 +93,67 @@ app.post('/api/auth/google', async (req, res) => {
   console.log('--- Auth Process Finished ---');
 });
 
+app.get('/api/exercises', async (req, res) => {
+  console.log('[SERVER] GET /api/exercises request received');
+  try {
+    const exercises = await db.request('/ejercicios');
+    console.log(`[SERVER] Successfully fetched ${exercises ? exercises.length : 0} exercises from DB API`);
+    res.json(exercises);
+  } catch (error) {
+    console.error('[SERVER] Failed to fetch exercises:', error.message);
+    res.status(500).json({ error: 'Failed to fetch exercises', details: error.message });
+  }
+});
+
+app.get('/api/exercises/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Try different common patterns for REST APIs
+    let exercise;
+    try {
+      // 1. Standard /table/id
+      exercise = await db.request(`/ejercicios/${id}`);
+    } catch (e) {
+      console.log(`[SERVER] Pattern /ejercicios/${id} failed, trying filter...`);
+      // 2. Filter pattern (common in PostgREST and others)
+      const results = await db.request(`/ejercicios?id=eq.${id}`);
+      if (Array.isArray(results) && results.length > 0) {
+        exercise = results[0];
+      } else {
+        // 3. Simple query param
+        const results2 = await db.request(`/ejercicios?id=${id}`);
+        if (Array.isArray(results2) && results2.length > 0) {
+          exercise = results2[0];
+        } else {
+          throw new Error('Exercise not found');
+        }
+      }
+    }
+    res.json(exercise);
+  } catch (error) {
+    console.error('[SERVER] Exercise Fetch Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch exercise details', details: error.message });
+  }
+});
+
+app.get('/api/topics', async (req, res) => {
+  try {
+    const topics = await db.request('/topics');
+    res.json(topics);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch topics' });
+  }
+});
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await db.request('/usuarios');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 // --- Unified Frontend Serving ---
 // Serve static files from the React app build (Login)
 app.use(express.static(path.join(__dirname, '../client/dist')));

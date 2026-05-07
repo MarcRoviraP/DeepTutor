@@ -1,83 +1,120 @@
 /**
- * Mock API Service for DeepTutor
- * Centralizes all data to remove hardcoded strings from views.
+ * API Service for DeepTutor
+ * Fetches data from the backend endpoints.
  */
 
-const mockData = {
-    user: {
-        name: "Developer",
-        path: "Python Backend",
-        stats: {
-            studyTime: 42,
-            exercisesDone: 84,
-            streak: 12,
-            level: 24
-        },
-        nextLevelXP: "450 XP"
-    },
-    sessions: [
-        { id: 1, title: "Data Structures: Linked Lists", date: "Today", duration: "45 mins", type: "exercise", difficulty: "Intermediate", icon: "data_object", color: "tertiary" },
-        { id: 2, title: "REST API Design with Fast API", date: "Yesterday", duration: "1.5 hours", type: "chat", difficulty: "Advanced", icon: "api", color: "primary" }
-    ],
-    exercises: [
-        { 
-            id: "two-sum", 
-            title: "Two Sum", 
-            difficulty: "Beginner", 
-            category: "Arrays", 
-            description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-            time: "15 mins",
-            completed: true
-        },
-        { 
-            id: "reverse-linked-list", 
-            title: "Reverse Linked List", 
-            difficulty: "Intermediate", 
-            category: "Linked List", 
-            description: "Given the head of a singly linked list, reverse the list, and return the reversed list. Implement both iterative and recursive solutions.",
-            time: "30 mins",
-            completed: false
-        },
-        { 
-            id: "binary-tree-traversal", 
-            title: "Binary Tree Level Order Traversal", 
-            difficulty: "Intermediate", 
-            category: "Trees", 
-            description: "Given the root of a binary tree, return the level order traversal of its nodes' values. (i.e., from left to right, level by level).",
-            time: "45 mins",
-            completed: false
-        }
-    ],
-    chatHistory: [
-        { role: "user", content: "I'm trying to understand how to implement a basic React hook for fetching data. Can you show me an example?", time: "2:45 PM" },
-        { 
-            role: "assistant", 
-            content: "Certainly! A custom React hook for data fetching is a great way to encapsulate state and side effects. Here's a structured approach to building a robust useFetch hook.",
-            time: "2:46 PM",
-            code: "import { useState, useEffect } from 'react';\n\nexport const useFetch = (url) => {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState(null);\n\n  useEffect(() => {\n    let isMounted = true;\n    const fetchData = async () => {\n      try {\n        const res = await fetch(url);\n        const json = await res.json();\n        if (isMounted) setData(json);\n      } catch (err) {\n        if (isMounted) setError(err);\n      } finally {\n        if (isMounted) setLoading(false);\n      }\n    };\n    fetchData();\n    return () => { isMounted = false; };\n  }, [url]);\n\n  return { data, loading, error };\n};"
-        }
-    ],
-    progress: {
-        mastery: 75,
-        breakdown: [
-            { name: "Python Core", percentage: 90, color: "primary" },
-            { name: "Algorithms", percentage: 65, color: "tertiary" },
-            { name: "Web Backend", percentage: 40, color: "secondary" }
-        ],
-        modules: [
-            { id: 1, name: "Language Fundamentals", status: "completed", desc: "Variables, loops, and basic data types." },
-            { id: 2, name: "Advanced Data Structures", status: "completed", desc: "Dictionaries, sets, and complex lists." },
-            { id: 3, name: "Object Oriented Programming", status: "active", desc: "Classes, inheritance, and decorators." },
-            { id: 4, name: "Database Integration", status: "locked", desc: "SQLAlchemy and PostgreSQL basics." }
-        ]
+const BASE_URL = ''; // Relative to the current origin
+
+const DEFAULT_USER = {
+    name: "Guest",
+    level: 0,
+    stats: {
+        studyTime: 0,
+        exercisesDone: 0,
+        streak: 0,
+        level: 1
     }
 };
 
 export const api = {
-    getUser: () => Promise.resolve(mockData.user),
-    getSessions: () => Promise.resolve(mockData.sessions),
-    getExercises: () => Promise.resolve(mockData.exercises),
-    getChatHistory: () => Promise.resolve(mockData.chatHistory),
-    getProgress: () => Promise.resolve(mockData.progress),
-    getExerciseById: (id) => Promise.resolve(mockData.exercises.find(e => e.id === id))
+    getUser: async () => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            // Ensure stats exist
+            if (!user.stats) user.stats = DEFAULT_USER.stats;
+            return user;
+        }
+        return DEFAULT_USER;
+    },
+    
+    getSessions: async () => {
+        // Mock data for now as we don't have a backend endpoint for this yet
+        return [
+            { id: 1, title: "Initial Setup", date: "Today", duration: "10 mins", type: "exercise" },
+            { id: 2, title: "Python Basics", date: "Yesterday", duration: "25 mins", type: "exercise" }
+        ];
+    },
+    
+    getExercises: async () => {
+        const url = `${BASE_URL}/api/exercises`;
+        console.log(`[API] Fetching exercises from: ${url}`);
+        try {
+            const response = await fetch(url);
+            console.log(`[API] Exercises Response Status: ${response.status}`);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[API] Failed to fetch exercises. Status: ${response.status}, Error: ${errorText}`);
+                throw new Error('Failed to fetch exercises');
+            }
+            
+            const data = await response.json();
+            console.log(`[API] Received data from server:`, data);
+            
+            if (!Array.isArray(data)) {
+                console.error('[API] Expected array of exercises but received:', typeof data);
+                return [];
+            }
+            
+            console.log(`[API] Mapping ${data.length} exercises.`);
+            
+            return data.map(ex => ({
+                id: ex.id,
+                title: ex.titulo,
+                difficulty: ex.dificultad,
+                category: "General",
+                description: ex.descripcion,
+                time: "30 mins",
+                completed: false
+            }));
+        } catch (error) {
+            console.error('[API] Critical Error in getExercises:', error);
+            return [];
+        }
+    },
+    
+    getChatHistory: async () => {
+        return [];
+    },
+    
+    getProgress: async () => {
+        return {
+            mastery: 0,
+            breakdown: [],
+            modules: []
+        };
+    },
+    
+    getExerciseById: async (id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/exercises/${id}`);
+            if (!response.ok) {
+                // Fallback: fetch all and find
+                const all = await api.getExercises();
+                const found = all.find(e => e.id == id);
+                if (found) return found;
+                throw new Error('Failed to fetch exercise');
+            }
+            const ex = await response.json();
+            
+            // Handle case where API might return an array with 1 item or direct object
+            const data = Array.isArray(ex) ? ex[0] : ex;
+
+            return {
+                id: data.id,
+                title: data.titulo,
+                difficulty: data.dificultad,
+                category: "General",
+                description: data.descripcion,
+                time: "30 mins",
+                completed: false
+            };
+        } catch (error) {
+            console.error('API Error:', error);
+            // Last resort: check if we can find it in all exercises
+            const all = await api.getExercises();
+            return all.find(e => e.id == id) || null;
+        }
+    }
 };
