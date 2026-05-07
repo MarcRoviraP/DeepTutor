@@ -10,7 +10,9 @@
     "server:dev": "cd server && npm run dev",
     "client": "cd client && npm run dev",
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
-    "start": "npm run build:client && npm run server"
+    "admin": "node admin/server.js",
+    "start": "npm run build:client && npm run server",
+    "all": "npm run install:all && npm run build:client && npm run server && npm run admin"
   },
   "dependencies": {},
   "devDependencies": {
