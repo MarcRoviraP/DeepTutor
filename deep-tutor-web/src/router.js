@@ -17,8 +17,11 @@ class Router {
         this.container = document.getElementById('app-content');
         
         window.addEventListener('popstate', () => {
-            const route = window.location.hash.replace('#/', '') || 'dashboard';
-            this.navigate(route, null, false);
+            const fullRoute = window.location.hash.replace('#/', '');
+            const parts = fullRoute.split('/');
+            const route = parts[0] || 'dashboard';
+            const id = parts[1];
+            this.navigate(route, id ? { id } : null, false);
         });
     }
 
@@ -27,14 +30,18 @@ class Router {
         
         if (this.routes[route]) {
             if (pushState) {
-                window.history.pushState(params, '', `#/${route}`);
+                const path = params?.id ? `${route}/${params.id}` : route;
+                window.history.pushState(params, '', `#/${path}`);
             }
             
             // Highlight active sidebar link
             this.updateActiveLink(route);
             
-            // Show loading state (optional)
-            this.container.innerHTML = '<div class="flex items-center justify-center h-full"><span class="animate-pulse text-primary font-bold">Loading...</span></div>';
+            // Only show loading state if we're changing the base route to avoid flickering
+            if (this.currentRoute !== route) {
+                this.container.innerHTML = '<div class="flex items-center justify-center h-full"><span class="animate-pulse text-primary font-bold">Cargando...</span></div>';
+            }
+            this.currentRoute = route;
             
             await this.routes[route].call(this, params);
         }
@@ -75,9 +82,42 @@ class Router {
         this.container.innerHTML = Editor({ exercise });
     }
 
-    async renderChat() {
-        const history = await api.getChatHistory();
-        this.container.innerHTML = Chat({ history });
+    async renderChat(params) {
+        const user = await api.getUser();
+        if (!user || !user.id) {
+            this.container.innerHTML = '<div class="p-8">Por favor, inicia sesión para usar el Mentor IA.</div>';
+            return;
+        }
+
+        // Fetch conversations for user
+        let conversations = await api.getConversations(user.id);
+        
+        // If no conversations exist, create one automatically
+        if (conversations.length === 0) {
+            const newConv = await api.createConversation(user.id);
+            if (newConv) {
+                conversations = [newConv];
+            }
+        }
+
+        // Use active id from params or default to the first one
+        const activeId = params?.id || conversations[0]?.id;
+        let messages = [];
+        if (activeId) {
+            messages = await api.getChatMessages(activeId);
+        }
+
+        this.container.innerHTML = Chat({ 
+            user, 
+            conversations, 
+            activeId, 
+            messages 
+        });
+        
+        // Initialize chat logic (event listeners, etc.)
+        if (typeof window.initChat === 'function') {
+            window.initChat(messages);
+        }
     }
 
     async renderProgress() {

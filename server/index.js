@@ -154,6 +154,168 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
+// --- Chat & Conversations ---
+
+app.get('/api/conversations', async (req, res) => {
+  const { usuario_id } = req.query;
+  if (!usuario_id) return res.status(400).json({ error: 'usuario_id es requerido' });
+  try {
+    const convs = await db.request(`/conversaciones?usuario_id=eq.${usuario_id}`);
+    res.json(convs || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener conversaciones' });
+  }
+});
+
+app.post('/api/conversations', async (req, res) => {
+  const { usuario_id } = req.body;
+  console.log(`[SERVER] Intentando crear conversación para usuario_id: ${usuario_id}`);
+  
+  if (!usuario_id) return res.status(400).json({ error: 'usuario_id es requerido' });
+  
+  try {
+    // Intentamos enviar usuario_id y una fecha por si la DB la requiere
+    const payload = { 
+      usuario_id: parseInt(usuario_id),
+      fecha_creacion: new Date().toISOString() 
+    };
+    
+    const result = await db.request('/conversaciones', 'POST', payload);
+    console.log('[SERVER] Conversación creada con éxito:', result);
+    res.json(Array.isArray(result) ? result[0] : result);
+  } catch (error) {
+    console.error('[SERVER] ERROR al crear conversación:', error.message);
+    res.status(500).json({ error: 'Error al crear conversación', details: error.message });
+  }
+});
+
+app.delete('/api/conversations/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    console.log(`[SERVER] Iniciando borrado robusto de conversación ${id}...`);
+    
+    // 1. Obtener todos los mensajes de esta conversación para tener sus IDs
+    const messages = await db.request(`/chat?conversacion_id=eq.${id}`);
+    
+    if (Array.isArray(messages) && messages.length > 0) {
+      console.log(`[SERVER] Se encontraron ${messages.length} mensajes. Borrando uno a uno...`);
+      // 2. Borrar cada mensaje individualmente por su ID (forma más compatible)
+      for (const msg of messages) {
+        try {
+          await db.request(`/chat/${msg.id}`, 'DELETE');
+        } catch (msgErr) {
+          console.warn(`[SERVER] No se pudo borrar mensaje ${msg.id}, continuando...`);
+        }
+      }
+      console.log(`[SERVER] Limpieza de mensajes completada.`);
+    }
+
+    // 3. Finalmente borrar la conversación por su ID
+    await db.request(`/conversaciones/${id}`, 'DELETE');
+    
+    console.log(`[SERVER] Conversación ${id} eliminada con éxito.`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(`[SERVER] FALLÓ el borrado de la conversación ${id}:`, error.message);
+    res.status(500).json({ error: 'Error al eliminar conversación', details: error.message });
+  }
+});
+
+app.get('/api/chat', async (req, res) => {
+  const { conversacion_id } = req.query;
+  if (!conversacion_id) return res.status(400).json({ error: 'conversacion_id es requerido' });
+  try {
+    const messages = await db.request(`/chat?conversacion_id=eq.${conversacion_id}`);
+    res.json(messages || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener mensajes del chat' });
+  }
+});
+
+app.post('/api/chat', async (req, res) => {
+  const { usuario_id, conversacion_id, mensaje, respuesta } = req.body;
+  if (!usuario_id || !conversacion_id || !mensaje) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+  try {
+    const result = await db.request('/chat', 'POST', {
+      usuario_id,
+      conversacion_id,
+      mensaje,
+      respuesta
+    });
+    res.json(Array.isArray(result) ? result[0] : result);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar mensaje en el chat' });
+  }
+});
+
+// --- AI Proxy Endpoint ---
+app.post('/api/ai/chat', async (req, res) => {
+  const { systemInstruction, message, history } = req.body;
+  const GEMINI_KEY = process.env.GEMINI_API_KEY;
+  const XAI_KEY = process.env.XAI_API_KEY;
+
+  try {
+    // 1. Preparar historial para Gemini
+    // Formato esperado: [{ role: "user", parts: [{ text: "..." }] }, { role: "model", parts: [{ text: "..." }] }]
+    const geminiHistory = (history || []).flatMap(msg => [
+      { role: "user", parts: [{ text: msg.mensaje }] },
+      { role: "model", parts: [{ text: msg.respuesta }] }
+    ]);
+    
+    // Añadimos el mensaje actual
+    geminiHistory.push({ role: "user", parts: [{ text: message }] });
+
+    // 1. Try Gemini
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: { text: systemInstruction } },
+        contents: geminiHistory,
+        generationConfig: { temperature: 0.8, maxOutputTokens: 2048 }
+      })
+    });
+
+    const data = await geminiRes.json();
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (aiText) {
+      return res.json({ model: 'Gemini 2.5', text: aiText });
+    }
+    throw new Error('Gemini failed or returned empty');
+
+  } catch (error) {
+    console.warn('Gemini proxy failed, trying Grok...', error);
+    try {
+      // 2. Fallback Grok - Combinamos historial en el input
+      const combinedHistory = (history || []).map(m => `Usuario: ${m.mensaje}\nMentor: ${m.respuesta}`).join('\n\n');
+      const xaiRes = await fetch(`https://api.x.ai/v1/responses`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${XAI_KEY}`
+        },
+        body: JSON.stringify({
+          model: "grok-4.20-reasoning",
+          input: `${systemInstruction}\n\nHistorial previo:\n${combinedHistory}\n\nUsuario actual: ${message}`
+        })
+      });
+
+      const xaiData = await xaiRes.json();
+      const xaiText = xaiData.output || xaiData.response || xaiData.choices?.[0]?.message?.content;
+
+      if (xaiText) {
+        return res.json({ model: 'Grok 4.20', text: xaiText });
+      }
+      throw new Error('Grok proxy failed');
+    } catch (fallbackError) {
+      res.status(500).json({ error: 'Todos los modelos de IA fallaron' });
+    }
+  }
+});
+
 // --- Unified Frontend Serving ---
 // Serve static files from the React app build (Login)
 app.use(express.static(path.join(__dirname, '../client/dist')));

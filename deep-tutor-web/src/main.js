@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial navigation
-    const initialRoute = window.location.hash.replace('#/', '') || 'dashboard';
-    router.navigate(initialRoute, null, false);
+    const fullRoute = window.location.hash.replace('#/', '');
+    const parts = fullRoute.split('/');
+    const route = parts[0] || 'dashboard';
+    const id = parts[1];
+    router.navigate(route, id ? { id } : null, false);
 });

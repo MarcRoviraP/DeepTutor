@@ -74,8 +74,68 @@ export const api = {
         }
     },
     
+    getConversations: async (usuario_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/conversations?usuario_id=${usuario_id}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+            return [];
+        }
+    },
+    
+    createConversation: async (usuario_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/conversations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario_id })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating conversation:', error);
+            return null;
+        }
+    },
+    
+    deleteConversation: async (id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/conversations/${id}`, {
+                method: 'DELETE'
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            return null;
+        }
+    },
+    
+    getChatMessages: async (conversacion_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat?conversacion_id=${conversacion_id}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching chat messages:', error);
+            return [];
+        }
+    },
+    
+    saveChatMessage: async (usuario_id, conversacion_id, mensaje, respuesta) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario_id, conversacion_id, mensaje, respuesta })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving chat message:', error);
+            return null;
+        }
+    },
+    
     getChatHistory: async () => {
-        return [];
+        return []; // Mantener por compatibilidad si es necesario, pero preferir getChatMessages
     },
     
     getProgress: async () => {

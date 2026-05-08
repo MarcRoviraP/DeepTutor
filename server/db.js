@@ -18,7 +18,8 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     method,
     headers: {
       'X-API-Key': API_KEY,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
     }
   };
 
@@ -49,7 +50,11 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     }
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[DB-API][${requestId}] CRITICAL FAILURE on ${url} (after ${duration}ms):`, error.message);
+    console.error(`\n[DB-API][${requestId}] ERROR CRÍTICO EN LA CONSULTA:`);
+    console.error(`- URL: ${method} ${url}`);
+    console.error(`- Mensaje: ${error.message}`);
+    if (data) console.error(`- Payload enviado: ${JSON.stringify(data)}`);
+    console.error(`--------------------------------------------\n`);
     throw error;
   }
 };
