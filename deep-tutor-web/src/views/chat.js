@@ -65,6 +65,14 @@ export const Chat = (data) => {
                 `).join('')}
                 ${conversations.length === 0 ? '<p class="text-xs text-outline p-4 text-center">No hay chats activos</p>' : ''}
             </div>
+
+            <!-- Panel de Gestos (Debug/Tests) -->
+            <div class="p-3 border-t border-outline-variant bg-surface-container-low">
+                <p class="text-[9px] font-bold text-outline uppercase mb-2 px-1">Control del Mentor</p>
+                <div id="gesture-controls" class="grid grid-cols-2 gap-1.5 min-h-[60px]">
+                    <p class="col-span-2 text-[8px] text-outline text-center py-4 animate-pulse uppercase tracking-tighter">Conectando con el Mentor...</p>
+                </div>
+            </div>
         </aside>
 
         <!-- Área Principal de Chat -->
@@ -212,6 +220,78 @@ window.renameChat = async (id, currentName, event) => {
         });
     }
 };
+
+window.triggerGesture = (name) => {
+    const mentorIframe = document.getElementById('mentor-iframe');
+    if (mentorIframe && mentorIframe.contentWindow) {
+        console.log(`[CHAT] Disparando animación: ${name}`);
+        const isOneShot = !name.toLowerCase().includes('idle') && !name.toLowerCase().includes('talk');
+        mentorIframe.contentWindow.postMessage({ 
+            type: 'gesture', 
+            gesture: name,
+            oneShot: isOneShot
+        }, '*');
+    }
+};
+
+window.setMentorMood = (mood) => {
+    const mentorIframe = document.getElementById('mentor-iframe');
+    if (mentorIframe && mentorIframe.contentWindow) {
+        console.log(`[CHAT] Cambiando mood del mentor a: ${mood}`);
+        mentorIframe.contentWindow.postMessage({ type: 'mood', value: mood }, '*');
+    }
+};
+
+// Escuchar animaciones detectadas por el mentor
+window.addEventListener('message', (e) => {
+    if (e.data.type === 'animations_loaded') {
+        console.log('[CHAT] Recibidas animaciones del mentor:', e.data.animations);
+        const container = document.getElementById('gesture-controls');
+        if (!container) return;
+        
+        const buttonsHTML = e.data.animations.map(name => {
+            let icon = 'motion_photos_on';
+            let label = name;
+            
+            const lower = name.toLowerCase();
+            if (lower.includes('idle')) { icon = 'timer'; label = 'Espera'; }
+            else if (lower.includes('talk')) { icon = 'forum'; label = 'Hablar'; }
+            else if (lower.includes('wave')) { icon = 'front_hand'; label = 'Saludar'; }
+            else if (lower.includes('jump')) { icon = 'vertical_align_top'; label = 'Saltar'; }
+            else if (lower.includes('yes')) { icon = 'check_circle'; label = 'Sí'; }
+            else if (lower.includes('no')) { icon = 'cancel'; label = 'No'; }
+            else if (lower.includes('dance')) { icon = 'celebration'; label = 'Baile'; }
+            else if (lower.includes('thumbs')) { icon = 'thumb_up'; label = 'OK'; }
+            
+            return `
+                <button onclick="window.triggerGesture('${name}')" class="text-[9px] py-1.5 px-2 bg-surface-container hover:bg-primary/10 hover:text-primary border border-outline-variant rounded-lg transition-all flex items-center justify-center gap-1 font-bold truncate">
+                    <span class="material-symbols-outlined !text-[14px]">${icon}</span>
+                    ${label.toUpperCase()}
+                </button>
+            `;
+        }).join('');
+
+        // Añadir botones de moods
+        const moods = [
+            { id: 'normal', icon: 'visibility', label: 'Normal', color: 'text-cyan-400' },
+            { id: 'error', icon: 'error', label: 'Error', color: 'text-red-500' },
+            { id: 'alert', icon: 'warning', label: 'Alerta', color: 'text-amber-500' },
+            { id: 'love', icon: 'favorite', label: 'Love', color: 'text-pink-500' }
+        ];
+        
+        const moodsHTML = `
+            <div class="col-span-full border-t border-outline-variant my-1 pt-2"></div>
+            ${moods.map(m => `
+                <button onclick="window.setMentorMood('${m.id}')" class="text-[9px] py-1.5 px-2 bg-surface-container hover:bg-primary/10 border border-outline-variant rounded-lg transition-all flex items-center justify-center gap-1 font-bold ${m.color}">
+                    <span class="material-symbols-outlined !text-[14px]">${m.icon}</span>
+                    ${m.label.toUpperCase()}
+                </button>
+            `).join('')}
+        `;
+
+        container.innerHTML = buttonsHTML + moodsHTML;
+    }
+});
 
 window.deleteChat = async (id, event) => {
     event.stopPropagation();
@@ -387,6 +467,12 @@ window.initChat = (chatHistory = []) => {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        // Reset de mood al enviar mensaje y activar modo "pensando"
+        if (isMentorVisible && mentorIframe.contentWindow) {
+            mentorIframe.contentWindow.postMessage({ type: 'mood', value: 'normal' }, '*');
+            mentorIframe.contentWindow.postMessage({ type: 'thinking', value: true }, '*');
+        }
+
         try {
             const response = await fetch('/api/ai/chat', {
                 method: 'POST',
@@ -407,6 +493,30 @@ window.initChat = (chatHistory = []) => {
             `;
 
             if (typingIndicator) typingIndicator.classList.add('hidden');
+            
+            // Desactivar modo "pensando"
+            if (mentorIframe.contentWindow) {
+                mentorIframe.contentWindow.postMessage({ type: 'thinking', value: false }, '*');
+            }
+
+            // Detección inteligente de mood y GESTO (usando Regex para evitar falsos positivos)
+            const lowerAI = aiText.toLowerCase();
+            const hasMatch = (words) => words.some(w => new RegExp(`\\b${w}\\b`, 'i').test(lowerAI));
+
+            if (hasMatch(['❤️', 'excelente', 'felicidades', 'muy bien', 'genial', 'increíble'])) {
+                window.setMentorMood('love');
+                window.triggerGesture('Dance'); 
+            } else if (hasMatch(['ojo', 'cuidado', 'atención', 'advertencia'])) {
+                window.setMentorMood('alert');
+                window.triggerGesture('No');
+            } else if (hasMatch(['correcto', 'perfecto', 'exacto', 'sí', 'bien'])) {
+                // Evitamos que "sintaxis" active el "sí"
+                window.triggerGesture('Yes');
+                window.setMentorMood('normal');
+            } else if (hasMatch(['error', 'fallo', 'incorrecto', 'problema'])) {
+                window.setMentorMood('error');
+                window.triggerGesture('No');
+            }
 
             // 2. Inyectar respuesta de la IA
             const aiMsgHTML = `
@@ -440,6 +550,13 @@ window.initChat = (chatHistory = []) => {
         } catch (error) {
             console.error('Chat Error:', error);
             if (typingIndicator) typingIndicator.classList.add('hidden');
+            
+            // Activar mood de Error en el mentor
+            window.setMentorMood('error');
+
+            if (mentorIframe && mentorIframe.contentWindow) {
+                mentorIframe.contentWindow.postMessage({ type: 'thinking', value: false }, '*');
+            }
         } finally {
             chatInput.disabled = false;
             document.getElementById('send-btn').disabled = false;
