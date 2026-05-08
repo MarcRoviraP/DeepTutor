@@ -10,10 +10,10 @@ const API_KEY = process.env.DB_API_KEY;
 const apiRequest = async (endpoint, method = 'GET', data = null) => {
   const url = `${API_URL}${endpoint}`;
   const requestId = Math.random().toString(36).substring(7);
-  
+
   console.log(`[DB-API][${requestId}] Request: ${method} ${url}`);
   const startTime = Date.now();
-  
+
   const options = {
     method,
     headers: {
@@ -31,7 +31,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     const response = await fetch(url, options);
     const duration = Date.now() - startTime;
     console.log(`[DB-API][${requestId}] Response Status: ${response.status} ${response.statusText} (took ${duration}ms)`);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[DB-API][${requestId}] Error Body:`, errorText);

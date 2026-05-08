@@ -38,8 +38,8 @@ function App() {
       // Redirect to main app
       window.location.href = '/dashboard'
     } catch (error) {
-      console.error('Login failed details:', error.response?.data || error.message)
-      alert('Error during login. Please try again.')
+      console.error('Detalles de fallo en login:', error.response?.data || error.message)
+      alert('Error durante el inicio de sesión. Por favor, intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -55,17 +55,17 @@ function App() {
     <div className="container">
       <div className="card">
         <h1>DeepTutor</h1>
-        <p className="subtitle">Your AI-Powered Learning Assistant</p>
+        <p className="subtitle">Tu asistente de aprendizaje potenciado por IA</p>
 
         {!user ? (
           <div className="login-section">
-            <p>Sign in to continue</p>
+            <p>Iniciá sesión para continuar</p>
             {loading ? (
               <div className="loader"></div>
             ) : (
               <GoogleLogin
                 onSuccess={handleLoginSuccess}
-                onError={() => console.log('Login Failed')}
+                onError={() => console.log('Fallo en el Login')}
                 useOneTap
               />
             )}
@@ -73,10 +73,10 @@ function App() {
         ) : (
           <div className="profile-section">
             <img src={user.picture} alt={user.name} className="avatar" />
-            <h2>Welcome, {user.name}!</h2>
+            <h2>¡Bienvenido, {user.name}!</h2>
             <p>{user.email}</p>
             <button onClick={handleLogout} className="logout-btn">
-              Sign Out
+              Cerrar Sesión
             </button>
             <button onClick={() => window.location.href = '/avatar'} className="home-btn">
               Volver al Avatar

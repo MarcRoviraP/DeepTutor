@@ -13,7 +13,7 @@ const server = http.createServer((req, res) => {
         const targetPath = req.url.replace('/api-proxy/', '');
         const targetUrl = `${API_BASE_URL}/${targetPath}`;
 
-        console.log(`[Proxy] Forwarding request to: ${targetUrl}`);
+        console.log(`[Proxy] Reenviando petición a: ${targetUrl}`);
 
         const proxyReq = http.request(targetUrl, {
             method: req.method,
@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
         });
 
         proxyReq.on('error', (err) => {
-            console.error('[Proxy Error]', err.message);
+            console.error('[Error de Proxy]', err.message);
             res.writeHead(500);
             res.end(`Error en el proxy: ${err.message}`);
         });
@@ -50,8 +50,8 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
     const url = `http://localhost:${PORT}`;
     console.log(`\x1b[36m%s\x1b[0m`, `-----------------------------------------`);
-    console.log(`🚀 DeepTutor Admin Panel Proxy running at: ${url}`);
-    console.log(`\x1b[33m%s\x1b[0m`, `(CORS Bypass Active via /api-proxy/)`);
+    console.log(`🚀 Proxy del Panel de Admin de DeepTutor corriendo en: ${url}`);
+    console.log(`\x1b[33m%s\x1b[0m`, `(Bypass de CORS activo vía /api-proxy/)`);
     console.log(`\x1b[36m%s\x1b[0m`, `-----------------------------------------`);
     
     const platform = process.platform;

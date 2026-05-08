@@ -4,13 +4,13 @@ export const Progress = (data) => {
     return `
     <div class="max-w-4xl mx-auto flex flex-col gap-10 animate-fade-in">
         <header>
-            <h2 class="text-2xl font-bold">Your Progress</h2>
-            <p class="text-on-surface-variant">Detailed view of your learning path and skill mastery.</p>
+            <h2 class="text-2xl font-bold">Tu Progreso</h2>
+            <p class="text-on-surface-variant">Vista detallada de tu camino de aprendizaje y dominio de habilidades.</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="bg-surface-container border border-outline-variant p-8 rounded-lg flex flex-col items-center gap-6">
-                <h3 class="font-bold uppercase tracking-widest text-xs text-outline">Overall Mastery</h3>
+                <h3 class="font-bold uppercase tracking-widest text-xs text-outline">Dominio General</h3>
                 <div class="relative w-40 h-40">
                     <svg class="w-full h-full transform -rotate-90">
                         <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="10" fill="transparent" class="text-surface-container-highest" />
@@ -23,7 +23,7 @@ export const Progress = (data) => {
             </div>
 
             <div class="flex flex-col gap-4">
-                <h3 class="font-bold">Skill Matrix</h3>
+                <h3 class="font-bold">Matriz de Habilidades</h3>
                 <div class="bg-surface-container border border-outline-variant p-6 rounded-lg flex flex-col gap-6">
                     ${progress.breakdown.map(skill => `
                         <div class="flex flex-col gap-2">
@@ -41,7 +41,7 @@ export const Progress = (data) => {
         </div>
 
         <section class="flex flex-col gap-4">
-            <h3 class="font-bold">Learning Roadmap</h3>
+            <h3 class="font-bold">Hoja de Ruta de Aprendizaje</h3>
             <div class="flex flex-col gap-2">
                 ${progress.modules.map(m => `
                     <div class="bg-surface-container border border-outline-variant p-4 rounded-lg flex items-center gap-6 ${m.status === 'locked' ? 'opacity-40' : ''}">

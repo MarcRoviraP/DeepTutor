@@ -5,7 +5,7 @@ export const Chat = (data) => {
     <div class="h-full flex flex-col animate-fade-in max-w-4xl mx-auto w-full">
         <header class="mb-6">
             <h2 class="text-2xl font-bold">AI Mentor</h2>
-            <p class="text-xs font-bold text-outline uppercase tracking-widest">Active Session</p>
+            <p class="text-xs font-bold text-outline uppercase tracking-widest">Sesión Activa</p>
         </header>
 
         <div class="flex-1 overflow-y-auto flex flex-col gap-6 pr-2 mb-6">
@@ -18,14 +18,14 @@ export const Chat = (data) => {
                                 ${msg.code}
                             </div>
                         ` : ''}
-                        <p class="text-[9px] mt-2 font-bold uppercase opacity-50 text-right">${msg.role === 'user' ? 'You' : 'Mentor'} • ${msg.time}</p>
+                        <p class="text-[9px] mt-2 font-bold uppercase opacity-50 text-right">${msg.role === 'user' ? 'Tú' : 'Mentor'} • ${msg.time}</p>
                     </div>
                 </div>
             `).join('')}
         </div>
 
         <div class="mt-auto relative">
-            <input type="text" class="w-full bg-surface-container border border-outline-variant rounded-lg py-4 pl-4 pr-12 focus:outline-none focus:border-primary transition-colors text-sm" placeholder="Ask your mentor anything...">
+            <input type="text" class="w-full bg-surface-container border border-outline-variant rounded-lg py-4 pl-4 pr-12 focus:outline-none focus:border-primary transition-colors text-sm" placeholder="Pregúntale cualquier cosa a tu mentor...">
             <button class="absolute right-2 top-1/2 -translate-y-1/2 text-primary p-2">
                 <span class="material-symbols-outlined">send</span>
             </button>

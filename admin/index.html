@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepTutor Admin | Master Panel</title>
+    <title>DeepTutor Admin | Panel Maestro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -288,14 +288,14 @@
             <!-- Tables will be injected here -->
         </ul>
         <div style="margin-top: auto; padding: 1rem; font-size: 0.8rem; color: var(--text-dim);">
-            Connected to 68.221.175.191:5001
+            Conectado a 68.221.175.191:5001
         </div>
     </aside>
 
     <main>
         <header>
             <div>
-                <p id="breadcrumb" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 0.5rem;">Database / Tables</p>
+                <p id="breadcrumb" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 0.5rem;">Base de Datos / Tablas</p>
                 <h1 id="currentTableName">Selecciona una tabla</h1>
             </div>
             <div class="actions">
@@ -303,7 +303,7 @@
                     <i data-lucide="refresh-cw"></i> Actualizar
                 </button>
                 <button class="btn btn-primary" onclick="openBulkModal()">
-                    <i data-lucide="layers"></i> Bulk Insert
+                    <i data-lucide="layers"></i> Carga Masiva (Bulk)
                 </button>
             </div>
         </header>
@@ -327,7 +327,7 @@
     <!-- Modal for Bulk Insert -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <h2>Bulk Insert - <span id="modalTableName"></span></h2>
+            <h2>Carga Masiva (Bulk) - <span id="modalTableName"></span></h2>
             <p style="color: var(--text-dim); margin-top: 0.5rem;">Pega un array de objetos JSON para insertar múltiples registros.</p>
             <textarea id="bulkJson" spellcheck="false" placeholder='Pega tu JSON aquí...'></textarea>
             <div class="modal-footer">
@@ -423,7 +423,7 @@
         async function selectTable(name) {
             currentTable = name;
             document.getElementById('currentTableName').innerText = name.charAt(0).toUpperCase() + name.slice(1);
-            document.getElementById('breadcrumb').innerText = `Database / ${name}`;
+            document.getElementById('breadcrumb').innerText = `Base de Datos / ${name}`;
             renderTableList();
             await loadData();
         }
@@ -439,7 +439,7 @@
                 });
                 const data = await response.json();
 
-                if (!Array.isArray(data)) throw new Error('Respuesta no válida');
+                if (!Array.isArray(data)) throw new Error('Respuesta de API no válida');
 
                 renderStats(data.length);
 
@@ -489,13 +489,13 @@
                 </div>
                 <div class="stat-card">
                     <div style="color: var(--text-dim); font-size: 0.8rem;">Estado API</div>
-                    <div class="stat-value" style="color: var(--success);">Online</div>
+                    <div class="stat-value" style="color: var(--success);">En Línea</div>
                 </div>
             `;
         }
 
         function openBulkModal() {
-            if (!currentTable) return alert('Selecciona una tabla primero');
+            if (!currentTable) return alert('Seleccioná una tabla primero');
             document.getElementById('modalTableName').innerText = currentTable;
             document.getElementById('modalOverlay').style.display = 'flex';
         }
