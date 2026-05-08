@@ -29,3 +29,15 @@ document.getElementById('sl-z').addEventListener('input', function () {
   document.getElementById('lbl-z').textContent = z.toFixed(2);
   setAvatarZ(z);
 });
+
+// Communication with parent (DeepTutor Chat)
+window.addEventListener('message', async (event) => {
+  if (event.data.type === 'speak') {
+    const { hablarTexto } = await import('./tts.js');
+    hablarTexto(event.data.text);
+  }
+  if (event.data.type === 'stop') {
+    const { parar } = await import('./tts.js');
+    parar();
+  }
+});

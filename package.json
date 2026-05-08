@@ -12,6 +12,7 @@
     "admin": "node admin/server.js",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run server:dev\" \"npm run client\"",
     "dev:all": "concurrently -n \"SERVER,CLIENT,ADMIN\" -c \"magenta,cyan,yellow\" \"npm run server:dev\" \"npm run client\" \"npm run admin\"",
+    "avatar": "xdg-open http://localhost:5002/avatar/avatar-3d-voz.html",
     "start": "npm run build:client && npm run server",
     "all": "npm run install:all && npm run build:client && npm run server && npm run admin"
   },

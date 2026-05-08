@@ -140,6 +140,60 @@ export async function hablar() {
   }
 }
 
+export async function hablarTexto(texto) {
+  const apiURL = document.getElementById('apiurl').value.trim();
+  if (!texto || !apiURL) return;
+
+  parar();
+  const sesion = ++_sesionId;
+  setOn(true);
+
+  const chunks = dividirEnChunks(texto);
+  const total  = chunks.length;
+
+  const urls  = new Array(total).fill(null);
+  const errs  = new Array(total).fill(null);
+  const fired = new Set();
+
+  function prefetch(i) {
+    if (i >= total || fired.has(i)) return;
+    fired.add(i);
+    fetchChunk(chunks[i], apiURL)
+      .then(u => { urls[i] = u; })
+      .catch(e => { errs[i] = e.message; });
+  }
+
+  prefetch(0); prefetch(1);
+
+  try {
+    for (let i = 0; i < total; i++) {
+      if (_sesionId !== sesion) return;
+      prefetch(i + 2);
+
+      while (!urls[i] && !errs[i]) {
+        if (_sesionId !== sesion) return;
+        await new Promise(r => setTimeout(r, 80));
+      }
+      if (errs[i]) throw new Error(`Fragmento ${i + 1}: ${errs[i]}`);
+
+      await new Promise((res, rej) => {
+        if (_sesionId !== sesion) { URL.revokeObjectURL(urls[i]); res(); return; }
+        const a = new Audio(urls[i]);
+        _audio = a;
+        a.onended = () => { URL.revokeObjectURL(urls[i]); res(); };
+        a.onerror = () => { URL.revokeObjectURL(urls[i]); rej(new Error('Error de audio')); };
+        a.play().catch(rej);
+      });
+    }
+    if (_sesionId === sesion) setOn(false);
+  } catch (e) {
+    if (_sesionId === sesion) {
+      setOn(false);
+      console.error('TTS Error:', e);
+    }
+  }
+}
+
 export function parar() {
   _sesionId++;
   if (_audio) { _audio.pause(); _audio = null; }

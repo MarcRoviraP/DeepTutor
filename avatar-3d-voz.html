@@ -464,6 +464,44 @@ window._setAvatarZ = z => {
      avatarGroup.position.z = z;
   }
 };
+
+// Debug logs for measures
+function logMeasures() {
+  if (avatarGroup) {
+    console.log("--- MEDIDAS ACTUALES ---");
+    console.log("Avatar Scale:", avatarGroup.scale.x.toFixed(4));
+    console.log("Avatar Position:", avatarGroup.position.x.toFixed(2), avatarGroup.position.y.toFixed(2), avatarGroup.position.z.toFixed(2));
+    console.log("Camera Position:", camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
+    console.log("Controls Target:", controls.target.x.toFixed(2), controls.target.y.toFixed(2), controls.target.z.toFixed(2));
+    console.log("------------------------");
+  }
+}
+
+// Debug sliders listeners
+document.getElementById('sl-scale').addEventListener('input', function() {
+  const mult = parseFloat(this.value);
+  document.getElementById('lbl-scale').textContent = mult.toFixed(2) + 'x';
+  window._setAvatarScale(mult);
+  logMeasures();
+});
+document.getElementById('sl-y').addEventListener('input', function() {
+  const y = parseFloat(this.value);
+  document.getElementById('lbl-y').textContent = y.toFixed(2);
+  window._setAvatarY(y);
+  logMeasures();
+});
+document.getElementById('sl-x').addEventListener('input', function() {
+  const x = parseFloat(this.value);
+  document.getElementById('lbl-x').textContent = x.toFixed(2);
+  window._setAvatarX(x);
+  logMeasures();
+});
+document.getElementById('sl-z').addEventListener('input', function() {
+  const z = parseFloat(this.value);
+  document.getElementById('lbl-z').textContent = z.toFixed(2);
+  window._setAvatarZ(z);
+  logMeasures();
+});
 </script>
 
 <!-- TTS — llama a la API local de Piper (Flask) -->
@@ -621,27 +659,7 @@ document.getElementById('btn-go').addEventListener('click', hablar);
 document.getElementById('btn-stop').addEventListener('click', parar);
 document.getElementById('txt').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();hablar();} });
 
-// Debug sliders
-document.getElementById('sl-scale').addEventListener('input', function() {
-  const mult = parseFloat(this.value);
-  document.getElementById('lbl-scale').textContent = mult.toFixed(2) + 'x';
-  if(window._setAvatarScale) window._setAvatarScale(mult);
-});
-document.getElementById('sl-y').addEventListener('input', function() {
-  const y = parseFloat(this.value);
-  document.getElementById('lbl-y').textContent = y.toFixed(2);
-  if(window._setAvatarY) window._setAvatarY(y);
-});
-document.getElementById('sl-x').addEventListener('input', function() {
-  const x = parseFloat(this.value);
-  document.getElementById('lbl-x').textContent = x.toFixed(2);
-  if(window._setAvatarX) window._setAvatarX(x);
-});
-document.getElementById('sl-z').addEventListener('input', function() {
-  const z = parseFloat(this.value);
-  document.getElementById('lbl-z').textContent = z.toFixed(2);
-  if(window._setAvatarZ) window._setAvatarZ(z);
-});
+// TTS script end
 </script>
 </body>
 </html>

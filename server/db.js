@@ -18,8 +18,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     method,
     headers: {
       'X-API-Key': API_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
+      'Content-Type': 'application/json'
     }
   };
 
@@ -36,7 +35,9 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[DB-API][${requestId}] Error Body:`, errorText);
-      throw new Error(`API Error (${response.status}): ${errorText}`);
+      const err = new Error(`API Error (${response.status}): ${errorText}`);
+      err.responseBody = errorText;
+      throw err;
     }
 
     const contentType = response.headers.get("content-type");

@@ -21,11 +21,12 @@ export const api = {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             const user = JSON.parse(storedUser);
-            // Ensure stats exist
+            // Ensure stats and id exist
+            if (!user.id) user.id = 25; // ID por defecto de la doc
             if (!user.stats) user.stats = DEFAULT_USER.stats;
             return user;
         }
-        return DEFAULT_USER;
+        return { ...DEFAULT_USER, id: 25 };
     },
     
     getSessions: async () => {
@@ -121,6 +122,7 @@ export const api = {
     },
     
     saveChatMessage: async (usuario_id, conversacion_id, mensaje, respuesta) => {
+        console.log('[API] saving message:', { usuario_id, conversacion_id, mensaje: mensaje.substring(0, 20) + '...' });
         try {
             const response = await fetch(`${BASE_URL}/api/chat`, {
                 method: 'POST',
