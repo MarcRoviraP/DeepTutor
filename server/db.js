@@ -1,14 +1,7 @@
 require('dotenv').config();
-const { Pool } = require('pg');
+// --- Database Client (API only) ---
+// We no longer use direct pg connection here.
 
-// --- Direct DB connection (for operations the REST API can't handle correctly) ---
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-});
 
 // --- REST API (for generic table access) ---
 const API_URL = process.env.DB_API_URL;
@@ -65,26 +58,25 @@ module.exports = {
   // Generic request for other tables
   request: apiRequest,
 
-  // Auth methods — use direct DB connection to avoid REST API bugs
+  // Auth methods — using the API instead of direct DB connection
   createUser: async ({ google_id, email, nombre, picture, nivel }) => {
-    console.log('[DB-DIRECT] Inserting new user via pg...');
-    const result = await pool.query(
-      `INSERT INTO usuarios (google_id, email, nombre, picture, nivel)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [google_id, email, nombre, picture, nivel]
-    );
-    console.log('[DB-DIRECT] User created:', result.rows[0].id);
-    return result.rows[0];
+    console.log('[DB-API] Creating new user via API...');
+    const result = await apiRequest('/usuarios', 'POST', {
+      google_id,
+      email,
+      nombre,
+      picture,
+      nivel
+    });
+    // In PostgREST/standard APIs, POST might return the object or null.
+    // If it's a list, we return the first item.
+    return Array.isArray(result) ? result[0] : result;
   },
 
   findUserByGoogleIdOrEmail: async (googleId, email) => {
-    console.log('[DB-DIRECT] Looking up user via pg...');
-    const result = await pool.query(
-      `SELECT * FROM usuarios WHERE google_id = $1 OR email = $2 LIMIT 1`,
-      [googleId, email]
-    );
-    console.log(`[DB-DIRECT] Found ${result.rows.length} user(s).`);
-    return result.rows;
+    console.log('[DB-API] Looking up user via API...');
+    // We use the 'or' operator from PostgREST to search by google_id OR email
+    const result = await apiRequest(`/usuarios?or=(google_id.eq.${googleId},email.eq.${email})`);
+    return result || [];
   },
 };

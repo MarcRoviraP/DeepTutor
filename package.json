@@ -9,8 +9,9 @@
     "server": "cd server && npm start",
     "server:dev": "cd server && npm run dev",
     "client": "cd client && npm run dev",
-    "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
     "admin": "node admin/server.js",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run server:dev\" \"npm run client\"",
+    "dev:all": "concurrently -n \"SERVER,CLIENT,ADMIN\" -c \"magenta,cyan,yellow\" \"npm run server:dev\" \"npm run client\" \"npm run admin\"",
     "start": "npm run build:client && npm run server",
     "all": "npm run install:all && npm run build:client && npm run server && npm run admin"
   },
