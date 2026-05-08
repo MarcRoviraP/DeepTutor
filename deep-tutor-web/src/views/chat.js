@@ -37,21 +37,30 @@ export const Chat = (data) => {
             
             <div class="flex-1 overflow-y-auto p-2 space-y-1">
                 ${conversations.map(conv => `
-                    <div class="group relative">
+                    <div id="conv-row-${conv.id}" class="group relative">
                         <button 
                             onclick="window.router.navigate('chat', { id: ${conv.id} })"
                             class="w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3 ${conv.id == activeId ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' : 'hover:bg-surface-container-highest text-on-surface-variant'}"
                         >
                             <span class="material-symbols-outlined text-lg ${conv.id == activeId ? 'fill-1' : ''}">chat_bubble</span>
-                            <span class="truncate text-sm font-medium">Conversación ${conv.id}</span>
+                            <span class="conv-title truncate text-sm font-medium">${conv.nombre || 'Conversación'}</span>
                         </button>
-                        <button 
-                            onclick="window.deleteChat(${conv.id}, event)"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover:opacity-100 hover:text-error transition-all"
-                            title="Eliminar chat"
-                        >
-                            <span class="material-symbols-outlined text-lg">delete</span>
-                        </button>
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                            <button 
+                                onclick="window.renameChat(${conv.id}, '${(conv.nombre || '').replace(/'/g, "\\'")}', event)"
+                                class="p-1 hover:text-primary transition-all"
+                                title="Renombrar"
+                            >
+                                <span class="material-symbols-outlined text-base">edit</span>
+                            </button>
+                            <button 
+                                onclick="window.deleteChat(${conv.id}, event)"
+                                class="p-1 hover:text-error transition-all"
+                                title="Eliminar chat"
+                            >
+                                <span class="material-symbols-outlined text-base">delete</span>
+                            </button>
+                        </div>
                     </div>
                 `).join('')}
                 ${conversations.length === 0 ? '<p class="text-xs text-outline p-4 text-center">No hay chats activos</p>' : ''}
@@ -64,8 +73,8 @@ export const Chat = (data) => {
                 <header class="p-4 border-b border-outline-variant bg-surface-container-high flex justify-between items-center">
                     <div>
                         <h2 class="font-bold text-on-surface">Arquitecto Mentor</h2>
-                        <p class="text-[10px] font-bold text-outline uppercase tracking-widest">
-                            ${activeConversation ? `Sesión Activa #${activeConversation.id}` : 'Inicia una conversación'}
+                        <p id="active-chat-title" class="text-[10px] font-bold text-outline uppercase tracking-widest">
+                            ${activeConversation ? (activeConversation.nombre || `Sesión Activa #${activeConversation.id}`) : 'Inicia una conversación'}
                         </p>
                     </div>
                     <div class="flex items-center gap-3">
@@ -157,11 +166,79 @@ export const Chat = (data) => {
 };
 
 // Global handlers
+window.renameChat = async (id, currentName, event) => {
+    if (event) event.stopPropagation();
+    
+    const newName = await ui.prompt({
+        title: 'Renombrar sesión',
+        message: 'Introduce el nuevo nombre para esta mentoría:',
+        defaultValue: currentName,
+        placeholder: 'Ej: Fundamentos de React',
+        type: 'warning'
+    });
+    if (newName === null || newName.trim() === '' || newName === currentName) return;
+
+    const trimmedName = newName.trim();
+
+    try {
+        const result = await api.updateConversation(id, { nombre: trimmedName });
+        if (result) {
+            // 1. Actualizar el título en la lista lateral
+            const row = document.getElementById(`conv-row-${id}`);
+            if (row) {
+                const titleSpan = row.querySelector('.conv-title');
+                if (titleSpan) titleSpan.innerText = trimmedName;
+                
+                // Actualizar el atributo onclick del botón de editar para el próximo prompt
+                const editBtn = row.querySelector('button[title="Renombrar"]');
+                if (editBtn) {
+                    editBtn.setAttribute('onclick', `window.renameChat(${id}, '${trimmedName.replace(/'/g, "\\'")}', event)`);
+                }
+            }
+
+            // 2. Si es el chat activo, actualizar el header
+            const container = document.getElementById('chat-container');
+            if (container && container.dataset.activeId == id) {
+                const activeTitle = document.getElementById('active-chat-title');
+                if (activeTitle) activeTitle.innerText = trimmedName;
+            }
+        }
+    } catch (error) {
+        console.error('Error al renombrar:', error);
+        await ui.alert({
+            title: 'Error de actualización',
+            message: 'No pudimos renombrar la conversación en este momento. Inténtalo de nuevo más tarde.',
+            type: 'danger'
+        });
+    }
+};
+
 window.deleteChat = async (id, event) => {
     event.stopPropagation();
-    if (confirm('¿Eliminar conversación?')) {
-        await api.deleteConversation(id);
-        window.router.navigate('chat', null, true);
+    const confirmed = await ui.confirm({
+        title: '¿Eliminar conversación?',
+        message: 'Esta acción borrará todo el historial de mensajes de forma permanente. No podrás deshacerlo.',
+        type: 'danger',
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Mantener chat'
+    });
+
+    if (confirmed) {
+        try {
+            await api.deleteConversation(id);
+            
+            // 1. Eliminar de la UI lateral
+            const row = document.getElementById(`conv-row-${id}`);
+            if (row) row.remove();
+
+            // 2. Si era el activo, navegar a otro o limpiar
+            const container = document.getElementById('chat-container');
+            if (container && container.dataset.activeId == id) {
+                window.router.navigate('chat', null, true);
+            }
+        } catch (error) {
+            console.error('Error al borrar:', error);
+        }
     }
 };
 
@@ -220,9 +297,36 @@ window.initChat = (chatHistory = []) => {
     });
 
     addChatBtn.addEventListener('click', async () => {
-        const user = await api.getUser();
-        const newConv = await api.createConversation(user.id);
-        if (newConv) window.router.navigate('chat', { id: newConv.id });
+        const icon = addChatBtn.querySelector('.material-symbols-outlined');
+        addChatBtn.disabled = true;
+        if (icon) icon.classList.add('animate-spin');
+        
+        try {
+            const user = await api.getUser();
+            console.log('[CHAT] Creando conversación para usuario:', user.id);
+            const newConv = await api.createConversation(user.id);
+            console.log('[CHAT] Respuesta del servidor:', newConv);
+            
+            // PostgREST/Proxy might return the object or an array with the object
+            const convData = Array.isArray(newConv) ? newConv[0] : newConv;
+            
+            if (convData && convData.id) {
+                console.log('[CHAT] Navegando a nueva conversación:', convData.id);
+                window.router.navigate('chat', { id: convData.id });
+            } else {
+                throw new Error('No se recibió el ID de la nueva conversación');
+            }
+        } catch (err) {
+            console.error('[CHAT] Error al crear conversación:', err);
+            await ui.alert({
+                title: 'Error al crear chat',
+                message: 'No pudimos iniciar una nueva sesión de mentoría. Por favor, intenta de nuevo.',
+                type: 'danger'
+            });
+        } finally {
+            addChatBtn.disabled = false;
+            if (icon) icon.classList.remove('animate-spin');
+        }
     });
 
     chatForm.addEventListener('submit', async (e) => {
@@ -235,7 +339,11 @@ window.initChat = (chatHistory = []) => {
         const finalActiveId = chatContainer.getAttribute('data-active-id');
 
         if (!finalActiveId || finalActiveId === 'undefined' || finalActiveId === 'null') {
-            alert('Selecciona una conversación.');
+            await ui.alert({
+                title: 'Conversación no seleccionada',
+                message: 'Para enviar un mensaje, primero debes seleccionar una sesión activa o crear una nueva.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -340,4 +448,5 @@ window.initChat = (chatHistory = []) => {
     });
 
     if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (chatInput) chatInput.focus();
 };

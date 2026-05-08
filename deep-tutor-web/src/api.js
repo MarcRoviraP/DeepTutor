@@ -111,6 +111,20 @@ export const api = {
         }
     },
     
+    updateConversation: async (id, data) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/conversations/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating conversation:', error);
+            return null;
+        }
+    },
+    
     getChatMessages: async (conversacion_id) => {
         try {
             const response = await fetch(`${BASE_URL}/api/chat?conversacion_id=${conversacion_id}`);

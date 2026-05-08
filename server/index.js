@@ -183,9 +183,41 @@ app.post('/api/conversations', async (req, res) => {
     console.log('[SERVER] Conversación creada con éxito:', result);
     res.json(Array.isArray(result) ? result[0] : result);
   } catch (error) {
+    // Mitigación para el error "0" de Flask que ocurre tras insertar con éxito
+    if (error.message && error.message.includes('"error": "0"')) {
+      console.log('[SERVER] Detectado error "0" fantasma de Flask. Intentando recuperar la conversación recién creada...');
+      try {
+        // Buscamos la última conversación de este usuario
+        const convs = await db.request(`/conversaciones?usuario_id=eq.${usuario_id}`);
+        if (Array.isArray(convs) && convs.length > 0) {
+          // Ordenamos por ID descendente para obtener la más nueva
+          const latest = convs.sort((a, b) => b.id - a.id)[0];
+          console.log('[SERVER] Recuperación exitosa. ID:', latest.id);
+          return res.json(latest);
+        }
+      } catch (recoveryError) {
+        console.error('[SERVER] Falló la recuperación de la conversación:', recoveryError.message);
+      }
+    }
+
     console.error('[SERVER] ERROR CRÍTICO al crear conversación:', error.message);
     if (error.responseBody) console.error('[SERVER] Detalle del error de DB:', error.responseBody);
     res.status(500).json({ error: 'Error al crear conversación', details: error.message });
+  }
+});
+
+app.patch('/api/conversations/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre } = req.body;
+  console.log(`[SERVER] Actualizando conversación ${id}:`, { nombre });
+  
+  try {
+    // Según apiPostgres.md, el método para actualizar es PUT
+    const result = await db.request(`/conversaciones/${id}`, 'PUT', { nombre });
+    res.json(result);
+  } catch (error) {
+    console.error(`[SERVER] Error al actualizar conversación ${id}:`, error.message);
+    res.status(500).json({ error: 'Error al actualizar conversación', details: error.message });
   }
 });
 

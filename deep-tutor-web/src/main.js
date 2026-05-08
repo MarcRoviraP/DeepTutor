@@ -1,4 +1,5 @@
 import { router } from './router.js';
+import './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DeepTutor SPA Initialized');
