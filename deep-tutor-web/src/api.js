@@ -66,6 +66,10 @@ export const api = {
                 difficulty: ex.dificultad,
                 category: "General",
                 description: ex.descripcion,
+                entrance: ex.entrada,
+                exit: ex.salida,
+                examples: ex.ejemplos,
+                requirements: ex.requisitos,
                 time: "30 mins",
                 completed: false
             }));
@@ -183,6 +187,10 @@ export const api = {
                 difficulty: data.dificultad,
                 category: "General",
                 description: data.descripcion,
+                entrance: data.entrada,
+                exit: data.salida,
+                examples: data.ejemplos,
+                requirements: data.requisitos,
                 time: "30 mins",
                 completed: false
             };

@@ -80,6 +80,9 @@ class Router {
         const id = params?.id;
         const exercise = id ? await api.getExerciseById(id) : null;
         this.container.innerHTML = Editor({ exercise });
+        if (typeof window.initEditor === 'function') {
+            window.initEditor(exercise);
+        }
     }
 
     async renderChat(params) {
