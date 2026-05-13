@@ -156,7 +156,7 @@ export const Editor = (data) => {
                             <span class="material-symbols-outlined text-sm text-outline">language</span>
                             <select id="language-selector" class="bg-[#0d0d15] border-none text-[10px] font-bold text-on-surface focus:ring-0 cursor-pointer uppercase tracking-widest">
                                 <option value="python">Python</option>
-                                <option value="javascript">JavaScript</option>
+                                <option value="lua">Lua</option>
                                 <option value="java">Java</option>
                             </select>
                         </div>
@@ -207,7 +207,7 @@ export const Editor = (data) => {
 // Language configuration mapping
 const LANGUAGE_CONFIG = {
     python: { extension: '.py', monaco: 'python', defaultCode: 'def solve():\n    # Escribe tu código aquí\n    pass\n\nif __name__ == "__main__":\n    solve()' },
-    javascript: { extension: '.js', monaco: 'javascript', defaultCode: 'function solve() {\n    // Escribe tu código aquí\n}\n\nsolve();' },
+    lua: { extension: '.lua', monaco: 'lua', defaultCode: 'function solve()\n    -- Escribe tu código aquí\nend\n\nsolve()' },
     java: { extension: '.java', monaco: 'java', defaultCode: 'public class Main {\n    public static void main(String[] args) {\n        // Escribe tu código aquí\n    }\n}' }
 };
 

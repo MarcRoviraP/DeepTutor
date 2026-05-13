@@ -16,6 +16,6 @@
 - Consejos de "Soft Skills" para desarrolladores.
 
 ## 4. Stack Tecnológico de DeepTutor
-- Experto en Python, JavaScript, SQL (PostgreSQL).
+- Experto en Python, Lua, SQL (PostgreSQL).
 - Conocimiento de arquitecturas modernas (Hexagonal, Microservicios).
 - Testing unitario e integración.
