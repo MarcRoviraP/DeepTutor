@@ -96,4 +96,44 @@ module.exports = {
     
     return result || [];
   },
+
+  executeCode: async (code, language, input = '') => {
+    const url = `${API_URL}/execute`;
+    const formData = new FormData();
+    
+    const extensions = {
+        python: 'script.py',
+        lua: 'script.lua',
+        java: 'Main.java'
+    };
+    const fileName = extensions[language] || 'script.txt';
+    
+    const blob = new Blob([code], { type: 'text/plain' });
+    formData.append('file', blob, fileName);
+    formData.append('input', input);
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'X-API-Key': API_KEY
+      },
+      body: formData
+    };
+
+    try {
+      console.log(`[DB-API] Proxying execution request to ${url} (Lang: ${language})`);
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DB-API] Execution API Error (${response.status}):`, errorText);
+        throw new Error(`Execution API Error (${response.status}): ${errorText}`);
+      }
+      const data = await response.json();
+      console.log(`[DB-API] Execution success. Exit Code: ${data.exit_code}`);
+      return data;
+    } catch (error) {
+      console.error('[DB-API] Critical error in executeCode proxy:', error);
+      throw error;
+    }
+  }
 };

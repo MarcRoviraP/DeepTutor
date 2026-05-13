@@ -1,3 +1,5 @@
+import { api } from "../api.js";
+
 export const Editor = (data) => {
     const { exercise } = data;
     
@@ -181,20 +183,34 @@ export const Editor = (data) => {
                 <div id="monaco-editor-container" class="flex-1 w-full" style="min-height: 500px;"></div>
 
                 <!-- Terminal Area (Bottom of Editor) -->
-                <div class="h-48 bg-[#0d0d15] border-t border-outline-variant flex flex-col">
-                    <div class="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-white/2">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm text-outline-variant">terminal</span>
-                            <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Salida de Consola</span>
+                <div class="h-64 bg-[#0d0d15] border-t border-outline-variant flex">
+                    <!-- Stdin Panel -->
+                    <div class="w-1/4 border-r border-white/5 flex flex-col bg-white/[0.01]">
+                        <div class="flex items-center gap-2 px-6 py-3 border-b border-white/5 bg-white/2">
+                            <span class="material-symbols-outlined text-sm text-outline-variant">keyboard</span>
+                            <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Entrada (stdin)</span>
                         </div>
-                        <button class="text-[10px] font-bold text-outline-variant hover:text-on-surface uppercase tracking-widest flex items-center gap-1 transition-colors">
-                            <span class="material-symbols-outlined text-xs">delete</span> Limpiar
-                        </button>
+                        <textarea id="stdin-input" 
+                            class="flex-1 bg-transparent p-4 font-mono text-xs text-on-surface focus:outline-none resize-none placeholder:text-outline-variant/30" 
+                            placeholder="Ej: 10\nHola Mundo\n..."></textarea>
                     </div>
-                    <div id="console-output" class="flex-1 p-6 font-mono text-xs text-on-surface-variant overflow-y-auto leading-relaxed">
-                        <div class="flex items-center gap-2 text-success/50 mb-2 italic">
-                            <span class="material-symbols-outlined text-sm">info</span>
-                            <span>La salida aparecerá aquí después de ejecutar...</span>
+
+                    <!-- Console Panel -->
+                    <div class="flex-1 flex flex-col">
+                        <div class="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-white/2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm text-outline-variant">terminal</span>
+                                <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Salida de Consola</span>
+                            </div>
+                            <button id="clear-console-btn" class="text-[10px] font-bold text-outline-variant hover:text-on-surface uppercase tracking-widest flex items-center gap-1 transition-colors">
+                                <span class="material-symbols-outlined text-xs">delete</span> Limpiar
+                            </button>
+                        </div>
+                        <div id="console-output" class="flex-1 p-6 font-mono text-xs text-on-surface-variant overflow-y-auto leading-relaxed">
+                            <div class="flex items-center gap-2 text-success/50 mb-2 italic">
+                                <span class="material-symbols-outlined text-sm">info</span>
+                                <span>La salida aparecerá aquí después de ejecutar...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -324,6 +340,78 @@ window.initEditor = (exercise) => {
                     editor.setValue(config.defaultCode);
                     console.log(`[EDITOR] Exercise reset to default for ${currentLang}`);
                 }
+            });
+        }
+
+        // Run code handler
+        const runBtn = document.getElementById('run-code-btn');
+        const consoleOutput = document.getElementById('console-output');
+        
+        if (runBtn) {
+            runBtn.addEventListener('click', async () => {
+                const code = editor.getValue();
+                const language = langSelector.value;
+                const stdin = document.getElementById('stdin-input')?.value || '';
+                
+                // Visual feedback
+                runBtn.disabled = true;
+                const originalContent = runBtn.innerHTML;
+                runBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> <span class="text-[10px] font-bold uppercase tracking-widest">Ejecutando...</span>';
+                
+                // Clear console and show loading
+                consoleOutput.innerHTML = '<div class="flex items-center gap-2 text-primary animate-pulse"><span class="material-symbols-outlined text-sm">hourglass_empty</span> <span>Ejecutando código en servidor seguro...</span></div>';
+
+                try {
+                    const result = await api.executeCode(code, language, stdin);
+                    console.log('[EDITOR] Execution result:', result);
+                    
+                    if (result.status === 'success') {
+                        let outputHTML = '';
+                        if (result.stdout) {
+                            outputHTML += `<div class="text-on-surface mb-2 whitespace-pre-wrap font-mono">${result.stdout}</div>`;
+                        }
+                        if (result.stderr) {
+                            outputHTML += `<div class="text-error mb-2 whitespace-pre-wrap font-mono">${result.stderr}</div>`;
+                        }
+                        if (!result.stdout && !result.stderr) {
+                            outputHTML += `<div class="text-on-surface-variant italic">El programa terminó sin salida.</div>`;
+                        }
+                        
+                        outputHTML += `<div class="mt-4 pt-4 border-t border-white/5 text-[10px] font-bold uppercase tracking-widest text-outline-variant flex items-center gap-4">
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-success" style="font-variation-settings: 'FILL' 1;">check_circle</span> Exit Code: ${result.exit_code}</span>
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-primary" style="font-variation-settings: 'FILL' 1;">security</span> Sandboxed: ${result.sandboxed}</span>
+                        </div>`;
+                        
+                        consoleOutput.innerHTML = outputHTML;
+                    } else {
+                        console.error('[EDITOR] Execution failed:', result);
+                        consoleOutput.innerHTML = `<div class="text-error flex flex-col gap-2">
+                            <div class="flex items-center gap-2 font-bold uppercase tracking-widest text-[10px]">
+                                <span class="material-symbols-outlined text-sm">error</span> Error de Ejecución
+                            </div>
+                            <div class="bg-error/10 p-4 rounded-lg border border-error/20 whitespace-pre-wrap font-mono text-xs">
+                                ${result.message || result.error || 'Error desconocido al ejecutar el código.'}
+                            </div>
+                        </div>`;
+                    }
+                } catch (error) {
+                    console.error('[EDITOR] Critical error connecting to server:', error);
+                    consoleOutput.innerHTML = `<div class="text-error">Error al conectar con el servidor: ${error.message}</div>`;
+                } finally {
+                    runBtn.disabled = false;
+                    runBtn.innerHTML = originalContent;
+                }
+            });
+        }
+
+        // Clear console handler
+        const clearBtn = document.getElementById('clear-console-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                consoleOutput.innerHTML = `<div class="flex items-center gap-2 text-success/50 mb-2 italic">
+                    <span class="material-symbols-outlined text-sm">info</span>
+                    <span>Consola limpiada. La salida aparecerá aquí después de ejecutar...</span>
+                </div>`;
             });
         }
 

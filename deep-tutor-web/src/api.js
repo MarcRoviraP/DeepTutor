@@ -200,5 +200,23 @@ export const api = {
             const all = await api.getExercises();
             return all.find(e => e.id == id) || null;
         }
+    },
+    executeCode: async (code, language, input = '') => {
+        try {
+            console.log(`[API] Executing ${language} code...`);
+            const response = await fetch(`${BASE_URL}/api/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, language, input })
+            });
+            const data = await response.json();
+            console.log('[API] Server response:', data);
+            return data;
+        } catch (error) {
+            console.error('[API] Execution request failed:', error);
+            return { status: 'error', message: error.message };
+        }
     }
 };
+
+window.api = api;

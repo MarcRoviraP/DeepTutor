@@ -319,6 +319,24 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// --- Code Execution ---
+app.post('/api/execute', async (req, res) => {
+  const { code, language, input } = req.body;
+  console.log(`[SERVER] Petición de ejecución recibida (${language})`);
+  
+  if (!code || !language) {
+    return res.status(400).json({ error: 'Código y lenguaje son requeridos' });
+  }
+  
+  try {
+    const result = await db.executeCode(code, language, input || '');
+    res.json(result);
+  } catch (error) {
+    console.error('[SERVER] Error al ejecutar código:', error.message);
+    res.status(500).json({ error: 'Error al ejecutar código', details: error.message });
+  }
+});
+
 // --- AI Proxy Endpoint ---
 app.post('/api/ai/chat', async (req, res) => {
   const { systemInstruction, message, history } = req.body;
