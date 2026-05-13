@@ -70,6 +70,7 @@ export const api = {
                 exit: ex.salida,
                 examples: ex.ejemplos,
                 requirements: ex.requisitos,
+                testCases: ex.casos_prueba,
                 time: "30 mins",
                 completed: false
             }));
@@ -191,6 +192,7 @@ export const api = {
                 exit: data.salida,
                 examples: data.ejemplos,
                 requirements: data.requisitos,
+                testCases: data.casos_prueba,
                 time: "30 mins",
                 completed: false
             };

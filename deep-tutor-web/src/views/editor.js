@@ -169,13 +169,16 @@ export const Editor = (data) => {
                                 <span class="text-[10px] font-bold uppercase tracking-widest">Restablecer</span>
                             </button>
 
-                            <button id="run-code-btn" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-1.5 rounded-lg hover:shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all group" title="Ejecutar código">
+                            <button id="run-code-btn" class="flex items-center gap-2 bg-surface-container-high border border-outline-variant text-on-surface px-4 py-1.5 rounded-lg hover:bg-surface-container-highest transition-all group" title="Ejecutar código">
                                 <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
                                 <span class="text-[10px] font-bold uppercase tracking-widest">Ejecutar Código</span>
                             </button>
-                        </div>
 
-                        <span class="material-symbols-outlined text-sm text-outline-variant hover:text-primary transition-colors cursor-pointer">settings</span>
+                            <button id="submit-solution-btn" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-1.5 rounded-lg hover:shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all group" title="Enviar solución">
+                                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest">Enviar Solución</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -400,6 +403,107 @@ window.initEditor = (exercise) => {
                 } finally {
                     runBtn.disabled = false;
                     runBtn.innerHTML = originalContent;
+                }
+            });
+        }
+
+        // Submit solution handler
+        const submitBtn = document.getElementById('submit-solution-btn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', async () => {
+                const code = editor.getValue();
+                const language = langSelector.value;
+                
+                let testCases = [];
+                try {
+                    testCases = typeof exercise.testCases === 'string' ? JSON.parse(exercise.testCases) : (exercise.testCases || []);
+                } catch (e) {
+                    console.error('[EDITOR] Error parsing test cases:', e);
+                }
+
+                if (testCases.length === 0) {
+                    consoleOutput.innerHTML = '<div class="text-error">No hay casos de prueba definidos para este ejercicio.</div>';
+                    return;
+                }
+
+                // Visual feedback
+                submitBtn.disabled = true;
+                const originalContent = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> <span class="text-[10px] font-bold uppercase tracking-widest">Enviando...</span>';
+                
+                consoleOutput.innerHTML = '<div class="flex flex-col gap-2"><div class="flex items-center gap-2 text-primary animate-pulse"><span class="material-symbols-outlined text-sm">hourglass_empty</span> <span>Evaluando solución con casos de prueba...</span></div></div>';
+
+                let passedCount = 0;
+                let resultsHTML = '<div class="flex flex-col gap-4">';
+
+                try {
+                    for (let i = 0; i < testCases.length; i++) {
+                        const tc = testCases[i];
+                        const input = tc.Entrada || tc.input || '';
+                        const expectedOutput = (tc.Salida || tc.output || '').toString().trim();
+                        
+                        consoleOutput.innerHTML = `<div class="flex flex-col gap-2"><div class="flex items-center gap-2 text-primary animate-pulse"><span class="material-symbols-outlined text-sm">hourglass_empty</span> <span>Evaluando caso ${i + 1}/${testCases.length}...</span></div></div>`;
+
+                        const result = await api.executeCode(code, language, input);
+                        
+                        const actualOutput = (result.stdout || '').toString().trim();
+                        const isCorrect = actualOutput === expectedOutput && result.status === 'success';
+
+                        if (isCorrect) passedCount++;
+
+                        resultsHTML += `
+                            <div class="bg-surface-container-lowest/50 p-4 rounded-xl border ${isCorrect ? 'border-success/30' : 'border-error/30'}">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest ${isCorrect ? 'text-success' : 'text-error'} flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">${isCorrect ? 'check_circle' : 'cancel'}</span>
+                                        Caso de Prueba ${i + 1}
+                                    </span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-full ${isCorrect ? 'bg-success/10 text-success' : 'bg-error/10 text-error'} font-bold">
+                                        ${isCorrect ? 'PASADO' : 'FALLADO'}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]">
+                                    <div>
+                                        <p class="text-outline-variant uppercase text-[9px] font-bold mb-1">Esperado</p>
+                                        <pre class="bg-black/20 p-2 rounded border border-white/5 font-mono">${expectedOutput || '(vacío)'}</pre>
+                                    </div>
+                                    <div>
+                                        <p class="text-outline-variant uppercase text-[9px] font-bold mb-1">Obtenido</p>
+                                        <pre class="bg-black/20 p-2 rounded border border-white/5 font-mono ${isCorrect ? 'text-success' : 'text-error'}">${actualOutput || (result.stderr ? 'ERROR' : '(vacío)')}</pre>
+                                    </div>
+                                </div>
+                                ${result.stderr ? `<div class="mt-2 text-error font-mono text-[10px] bg-error/5 p-2 rounded border border-error/10">${result.stderr}</div>` : ''}
+                            </div>
+                        `;
+                    }
+
+                    const allPassed = passedCount === testCases.length;
+                    resultsHTML = `
+                        <div class="mb-6 p-4 rounded-2xl ${allPassed ? 'bg-success/10 border border-success/30' : 'bg-surface-container-high border border-outline-variant'} flex items-center justify-between shadow-lg">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl ${allPassed ? 'bg-success/20' : 'bg-primary/20'} flex items-center justify-center border ${allPassed ? 'border-success/30' : 'border-primary/30'}">
+                                    <span class="material-symbols-outlined ${allPassed ? 'text-success' : 'text-primary'} text-3xl">${allPassed ? 'workspace_premium' : 'analytics'}</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-bold ${allPassed ? 'text-success' : 'text-on-surface'}">${allPassed ? '¡Excelente Trabajo!' : 'Resultados de Evaluación'}</h4>
+                                    <p class="text-xs text-on-surface-variant">Has superado ${passedCount} de ${testCases.length} casos de prueba.</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-black ${allPassed ? 'text-success' : 'text-primary'}">${Math.round((passedCount / testCases.length) * 100)}%</div>
+                                <div class="text-[9px] font-bold text-outline-variant uppercase tracking-widest">Puntuación</div>
+                            </div>
+                        </div>
+                    ` + resultsHTML + '</div>';
+
+                    consoleOutput.innerHTML = resultsHTML;
+
+                } catch (error) {
+                    console.error('[EDITOR] Error evaluating solution:', error);
+                    consoleOutput.innerHTML = `<div class="text-error">Error al evaluar la solución: ${error.message}</div>`;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalContent;
                 }
             });
         }
