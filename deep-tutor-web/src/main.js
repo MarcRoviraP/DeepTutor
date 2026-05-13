@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Handle Logout
-    const logoutBtn = Array.from(document.querySelectorAll('a')).find(a => a.textContent.includes('Logout'));
+    const logoutBtn = document.getElementById('logout-btn');
     
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
