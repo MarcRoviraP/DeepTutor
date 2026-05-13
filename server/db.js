@@ -81,8 +81,19 @@ module.exports = {
 
   findUserByGoogleIdOrEmail: async (googleId, email) => {
     console.log('[DB-API] Looking up user via API...');
-    // We use the 'or' operator from PostgREST to search by google_id OR email
-    const result = await apiRequest(`/usuarios?or=(google_id.eq.${googleId},email.eq.${email})`);
+    
+    // 1. Try searching by google_id first
+    let result = await apiRequest(`/usuarios?google_id=eq.${googleId}`);
+    
+    // If found and it's a non-empty array, return it
+    if (Array.isArray(result) && result.length > 0) {
+      return result;
+    }
+
+    // 2. If not found by google_id, try by email
+    console.log('[DB-API] User not found by Google ID, searching by email...');
+    result = await apiRequest(`/usuarios?email=eq.${email}`);
+    
     return result || [];
   },
 };

@@ -43,15 +43,31 @@ app.post('/api/auth/google', async (req, res) => {
 
     if (users.length === 0) {
       console.log('Paso 3: Nuevo usuario detectado. Creando registro vía API...');
-      // 3. Create new user if doesn't exist
-      user = await db.createUser({
-        google_id: googleId,
-        email: email,
-        nombre: name,
-        picture: picture,
-        nivel: 'principiante' // default level
-      });
-      console.log('✅ Nuevo usuario creado con éxito.');
+      try {
+        // 3. Create new user if doesn't exist
+        user = await db.createUser({
+          google_id: googleId,
+          email: email,
+          nombre: name,
+          picture: picture,
+          nivel: 'principiante' // default level
+        });
+        console.log('✅ Nuevo usuario creado con éxito.');
+      } catch (createError) {
+        // Mitigación para el error "0" de Flask
+        if (createError.message && createError.message.includes('"error": "0"')) {
+          console.log('[SERVER] Detectado error "0" fantasma en creación de usuario. Re-intentando búsqueda...');
+          const retryUsers = await db.findUserByGoogleIdOrEmail(googleId, email);
+          if (retryUsers.length > 0) {
+            user = retryUsers[0];
+            console.log('✅ Usuario recuperado tras error fantasma. ID:', user.id);
+          } else {
+            throw createError; // Si realmente no se creó, lanzamos el error
+          }
+        } else {
+          throw createError;
+        }
+      }
     } else {
       user = users[0];
       console.log('✅ Usuario existente encontrado. ID:', user.id);
