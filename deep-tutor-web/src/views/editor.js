@@ -74,9 +74,6 @@ export const Editor = (data) => {
                     <button class="bg-surface-container-high border border-outline-variant text-on-surface px-6 py-3 rounded-xl font-bold text-sm hover:bg-surface-container-highest transition-all flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">bookmark</span> Guardar
                     </button>
-                    <button id="run-code-btn" class="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:shadow-[0_0_20px_rgba(192,193,255,0.4)] transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Ejecutar Código
-                    </button>
                 </div>
             </div>
 
@@ -163,10 +160,19 @@ export const Editor = (data) => {
                                 <option value="java">Java</option>
                             </select>
                         </div>
-                        <button id="reset-exercise-btn" class="flex items-center gap-2 bg-error/10 border border-error/20 text-error px-3 py-1.5 rounded-lg hover:bg-error/20 transition-all group" title="Restablecer ejercicio">
-                            <span class="material-symbols-outlined text-sm group-hover:rotate-[-45deg] transition-transform">restart_alt</span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest">Restablecer</span>
-                        </button>
+                        
+                        <div class="flex items-center gap-2">
+                            <button id="reset-exercise-btn" class="flex items-center gap-2 bg-error/10 border border-error/20 text-error px-3 py-1.5 rounded-lg hover:bg-error/20 transition-all group" title="Restablecer ejercicio">
+                                <span class="material-symbols-outlined text-sm group-hover:rotate-[-45deg] transition-transform">restart_alt</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest">Restablecer</span>
+                            </button>
+
+                            <button id="run-code-btn" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-1.5 rounded-lg hover:shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all group" title="Ejecutar código">
+                                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest">Ejecutar Código</span>
+                            </button>
+                        </div>
+
                         <span class="material-symbols-outlined text-sm text-outline-variant hover:text-primary transition-colors cursor-pointer">settings</span>
                     </div>
                 </div>
