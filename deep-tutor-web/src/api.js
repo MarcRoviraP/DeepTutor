@@ -90,12 +90,12 @@ export const api = {
         }
     },
     
-    createConversation: async (usuario_id) => {
+    createConversation: async (usuario_id, titulo = null) => {
         try {
             const response = await fetch(`${BASE_URL}/api/conversations`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario_id })
+                body: JSON.stringify({ usuario_id, titulo })
             });
             return await response.json();
         } catch (error) {

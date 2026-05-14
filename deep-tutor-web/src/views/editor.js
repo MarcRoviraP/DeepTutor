@@ -72,10 +72,10 @@ export const Editor = (data) => {
                         <p class="text-on-surface-variant text-sm mt-1">Mentor: Tutor IA • Tiempo Estimado: 30 mins</p>
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <button class="bg-surface-container-high border border-outline-variant text-on-surface px-6 py-3 rounded-xl font-bold text-sm hover:bg-surface-container-highest transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">bookmark</span> Guardar
-                    </button>
+                <div class="flex gap-3" id="autosave-indicator">
+                    <div class="flex items-center gap-2 text-on-surface-variant/50 text-[10px] font-bold uppercase tracking-widest bg-surface-container-high/50 px-4 py-2 rounded-xl border border-outline-variant/30">
+                        <span class="material-symbols-outlined text-xs animate-pulse text-success">cloud_done</span> Autoguardado
+                    </div>
                 </div>
             </div>
 
@@ -124,16 +124,15 @@ export const Editor = (data) => {
                     </ul>
                 </div>
 
-                <div class="bg-surface-container border border-outline-variant p-6 rounded-2xl flex flex-col gap-4 shadow-lg border-l-4 border-l-error">
-                    <h3 class="font-bold text-error flex items-center gap-2 uppercase tracking-widest text-xs">
-                        <span class="material-symbols-outlined text-sm">report</span> Análisis de IA
+                <div class="bg-surface-container border border-outline-variant p-6 rounded-2xl flex flex-col gap-4 shadow-lg border-l-4 border-l-primary">
+                    <h3 class="font-bold text-primary flex items-center gap-2 uppercase tracking-widest text-xs">
+                        <span class="material-symbols-outlined text-sm">psychology</span> Tutor IA
                     </h3>
-                    <div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-                        <p class="text-[10px] font-mono text-on-surface-variant opacity-70 mb-2">ÚLTIMA_EXCEPCIÓN:</p>
-                        <p class="text-xs font-mono text-error">N/A</p>
-                    </div>
-                    <p class="text-xs text-on-surface-variant leading-relaxed">El mentor IA está listo para analizar tu código. Pulsa "Ejecutar" para ver resultados o pide una revisión.</p>
-                    <button class="w-full bg-primary/10 border border-primary/20 text-primary py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20 transition-all">Pedir Ayuda al Mentor</button>
+                    <p class="text-xs text-on-surface-variant leading-relaxed">¿Te quedaste trabado? El Mentor IA puede analizar tu código y explicarte cómo avanzar sin darte la solución directa.</p>
+                    <button id="ai-help-btn" class="w-full bg-primary text-on-primary py-4 rounded-xl text-[11px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(192,193,255,0.4)] transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                        Pedir Ayuda IA
+                    </button>
                 </div>
             </aside>
 
@@ -267,43 +266,59 @@ window.initEditor = (exercise) => {
             language: 'python',
             theme: 'vs-dark',
             automaticLayout: true,
-            fontFamily: 'JetBrains Mono',
             fontSize: 14,
-            lineHeight: 1.6,
+            fontFamily: "'Fira Code', 'Cascadia Code', monospace",
             minimap: { enabled: false },
-            scrollBeyondLastLine: false,
+            padding: { top: 20 },
             roundedSelection: true,
-            padding: { top: 20, bottom: 20 },
             scrollbar: {
                 vertical: 'hidden',
-                horizontal: 'hidden'
+                horizontal: 'auto'
             },
-            overviewRulerBorder: false,
-            hideCursorInOverviewRuler: true,
-            renderLineHighlight: 'all',
-            // Suggestions config
-            suggestOnTriggerCharacters: true,
-            quickSuggestions: {
-                other: true,
-                comments: true,
-                strings: true
-            },
-            acceptSuggestionOnEnter: 'on',
-            // Fix for height issue
-            suggest: {
-                showIcons: true,
-                maxVisibleSuggestions: 7,
-                filterGraceful: true,
-                snippetsPreventQuickSuggestions: false
-            },
-            suggestFontSize: 12,
-            suggestLineHeight: 22,
-            // CLAVE: Evita que el menú se corte por los bordes del IDE
             fixedOverflowWidgets: true
         });
 
+        // --- AUTOSAVE LOGIC ---
+        const getSaveKey = () => `deeptutor_code_${exercise?.id || 'sandbox'}_${langSelector.value}`;
+        
+        // Load saved code
+        const savedCode = localStorage.getItem(getSaveKey());
+        if (savedCode) {
+            console.log(`[EDITOR] Restoring saved code for ${langSelector.value}`);
+            editor.setValue(savedCode);
+        } else if (exercise?.initial_code) {
+             editor.setValue(exercise.initial_code);
+        }
+
+        // Handle changes for autosave
+        editor.onDidChangeModelContent(() => {
+            const code = editor.getValue();
+            localStorage.setItem(getSaveKey(), code);
+            
+            // Visual indicator
+            const indicator = document.getElementById('autosave-indicator');
+            if (indicator) {
+                const icon = indicator.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.textContent = 'sync';
+                    icon.classList.add('animate-spin');
+                    setTimeout(() => {
+                        icon.textContent = 'cloud_done';
+                        icon.classList.remove('animate-spin');
+                    }, 500);
+                }
+            }
+        });
+
+        // Update value on language change if no manual changes were made
+        const originalLangCode = editor.getValue();
+        // ----------------------
+
         // Store editor instance globally if needed
         window.currentEditor = editor;
+
+        let lastError = '';
+        let lastOutput = '';
 
         // Language change handler
         langSelector.addEventListener('change', (e) => {
@@ -316,10 +331,11 @@ window.initEditor = (exercise) => {
             // Update Filename
             filenameDisplay.textContent = `${problemName}${config.extension}`;
             
-            // Update default code if empty or just containing the other lang's default
-            const currentVal = editor.getValue();
-            const isAnyDefault = Object.values(LANGUAGE_CONFIG).some(c => c.defaultCode === currentVal);
-            if (!currentVal || isAnyDefault) {
+            // Try to load saved code for this new language
+            const saved = localStorage.getItem(getSaveKey());
+            if (saved) {
+                editor.setValue(saved);
+            } else {
                 editor.setValue(config.defaultCode);
             }
         });
@@ -366,6 +382,10 @@ window.initEditor = (exercise) => {
                 const language = langSelector.value;
                 const stdin = document.getElementById('stdin-input')?.value || '';
                 
+                // Reset context for AI help
+                lastError = '';
+                lastOutput = '';
+                
                 // Visual feedback
                 runBtn.disabled = true;
                 const originalContent = runBtn.innerHTML;
@@ -379,11 +399,14 @@ window.initEditor = (exercise) => {
                     console.log('[EDITOR] Execution result:', result);
                     
                     if (result.status === 'success') {
+                        lastError = '';
+                        lastOutput = result.stdout || '';
                         let outputHTML = '';
                         if (result.stdout) {
                             outputHTML += `<div class="text-on-surface mb-2 whitespace-pre-wrap font-mono">${cleanTraceback(result.stdout)}</div>`;
                         }
                         if (result.stderr) {
+                            lastError = result.stderr;
                             outputHTML += `<div class="text-error mb-2 whitespace-pre-wrap font-mono">${cleanTraceback(result.stderr)}</div>`;
                         }
                         if (!result.stdout && !result.stderr) {
@@ -399,6 +422,7 @@ window.initEditor = (exercise) => {
                     } else {
                         console.error('[EDITOR] Execution failed:', result);
                         const rawError = result.details || result.stderr || result.message || result.error || 'Error desconocido al ejecutar el código.';
+                        lastError = rawError;
                         const errorMessage = cleanTraceback(rawError);
                         consoleOutput.innerHTML = `
                         <div class="text-error flex flex-col gap-2">
@@ -425,6 +449,10 @@ window.initEditor = (exercise) => {
             submitBtn.addEventListener('click', async () => {
                 const code = editor.getValue();
                 const language = langSelector.value;
+                
+                // Reset context for AI help
+                lastError = '';
+                lastOutput = '';
                 
                 let testCases = [];
                 try {
@@ -461,7 +489,12 @@ window.initEditor = (exercise) => {
                         const actualOutput = (result.stdout || '').toString().trim();
                         const isCorrect = actualOutput === expectedOutput && result.status === 'success';
 
-                        if (isCorrect) passedCount++;
+                        if (isCorrect) {
+                            passedCount++;
+                        } else if (!lastError) {
+                            // Capturamos el primer error para el botón de ayuda
+                            lastError = result.stderr ? cleanTraceback(result.stderr) : `Salida incorrecta en Caso ${i+1}. Esperado: "${expectedOutput}", Obtenido: "${actualOutput}"`;
+                        }
 
                         resultsHTML += `
                             <div class="bg-surface-container-lowest/50 p-4 rounded-xl border ${isCorrect ? 'border-success/30' : 'border-error/30'}">
@@ -546,8 +579,65 @@ window.initEditor = (exercise) => {
         // Register Providers
         registerPythonProviders();
         registerJavaProviders();
+
+        // AYUDA IA handler
+        const aiHelpBtn = document.getElementById('ai-help-btn');
+        if (aiHelpBtn) {
+            aiHelpBtn.addEventListener('click', async () => {
+                const user = await api.getUser();
+                if (!user || !user.id) {
+                    return ui.alert({ title: 'Error', message: 'Debes iniciar sesión para pedir ayuda al mentor.', type: 'error' });
+                }
+
+                aiHelpBtn.disabled = true;
+                const originalContent = aiHelpBtn.innerHTML;
+                aiHelpBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Generando Ayuda...';
+
+                try {
+                    const code = editor.getValue();
+                    const language = langSelector.value;
+                    const testCases = exercise?.examples ? (typeof exercise.examples === 'string' ? JSON.parse(exercise.examples) : exercise.examples) : [];
+                    
+                    const prompt = `Hola Mentor IA, necesito ayuda con el ejercicio "${exercise?.title || 'Sandbox'}".
+
+ENUNCIADO:
+${exercise?.description || 'No hay descripción disponible.'}
+
+CASOS DE PRUEBA:
+${testCases.map((tc, i) => `Caso ${i+1}: Entrada: ${tc.input || tc.Entrada}, Salida esperada: ${tc.output || tc.Salida}`).join('\n')}
+
+MI CÓDIGO (${language}):
+\`\`\`${language}
+${code}
+\`\`\`
+
+ERROR/SALIDA ACTUAL:
+${lastError || lastOutput || 'Aún no he ejecutado el código o no hay errores registrados.'}
+
+¿Podrías explicarme qué estoy haciendo mal y darme pistas de cómo solucionarlo? No me des la solución completa directamente, prefiero aprender guiado.`;
+
+                    const title = `Pista ejercicio ${exercise?.title || 'Sandbox'}`;
+                    // Create new conversation
+                    const newConv = await api.createConversation(user.id, title);
+                    if (!newConv) throw new Error('No se pudo crear la conversación');
+
+                    // Save the contextual message
+                    await api.saveChatMessage(user.id, newConv.id, prompt, '¡Claro! He analizado tu código y el problema que planteas. Vamos a ver...');
+
+                    // Navigate to chat
+                    window.location.hash = `#/chat/${newConv.id}`;
+                    
+                } catch (error) {
+                    console.error('[EDITOR] Error getting AI help:', error);
+                    ui.alert({ title: 'Error', message: 'No se pudo conectar con el Mentor IA: ' + error.message, type: 'error' });
+                } finally {
+                    aiHelpBtn.disabled = false;
+                    aiHelpBtn.innerHTML = originalContent;
+                }
+            });
+        }
     });
-};
+};  
 
 const registerPythonProviders = () => {
     // Only register once
