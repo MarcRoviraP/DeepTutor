@@ -346,6 +346,16 @@ window.initEditor = (exercise) => {
             });
         }
 
+        // Utility to clean traceback paths
+        const cleanTraceback = (text) => {
+            if (!text || typeof text !== 'string') return text;
+            const currentLang = langSelector.value;
+            const config = LANGUAGE_CONFIG[currentLang];
+            const virtualName = `${problemName}${config.extension}`;
+            // Reemplaza rutas de /tmp/.../script.py con el nombre del ejercicio
+            return text.replace(/File\s+"\/tmp\/[^"]+\/script\.\w+"/g, `File "${virtualName}"`);
+        };
+
         // Run code handler
         const runBtn = document.getElementById('run-code-btn');
         const consoleOutput = document.getElementById('console-output');
@@ -371,10 +381,10 @@ window.initEditor = (exercise) => {
                     if (result.status === 'success') {
                         let outputHTML = '';
                         if (result.stdout) {
-                            outputHTML += `<div class="text-on-surface mb-2 whitespace-pre-wrap font-mono">${result.stdout}</div>`;
+                            outputHTML += `<div class="text-on-surface mb-2 whitespace-pre-wrap font-mono">${cleanTraceback(result.stdout)}</div>`;
                         }
                         if (result.stderr) {
-                            outputHTML += `<div class="text-error mb-2 whitespace-pre-wrap font-mono">${result.stderr}</div>`;
+                            outputHTML += `<div class="text-error mb-2 whitespace-pre-wrap font-mono">${cleanTraceback(result.stderr)}</div>`;
                         }
                         if (!result.stdout && !result.stderr) {
                             outputHTML += `<div class="text-on-surface-variant italic">El programa terminó sin salida.</div>`;
@@ -388,13 +398,15 @@ window.initEditor = (exercise) => {
                         consoleOutput.innerHTML = outputHTML;
                     } else {
                         console.error('[EDITOR] Execution failed:', result);
-                        consoleOutput.innerHTML = `<div class="text-error flex flex-col gap-2">
+                        const rawError = result.details || result.stderr || result.message || result.error || 'Error desconocido al ejecutar el código.';
+                        const errorMessage = cleanTraceback(rawError);
+                        consoleOutput.innerHTML = `
+                        <div class="text-error flex flex-col gap-2">
                             <div class="flex items-center gap-2 font-bold uppercase tracking-widest text-[10px]">
                                 <span class="material-symbols-outlined text-sm">error</span> Error de Ejecución
                             </div>
-                            <div class="bg-error/10 p-4 rounded-lg border border-error/20 whitespace-pre-wrap font-mono text-xs">
-                                ${result.message || result.error || 'Error desconocido al ejecutar el código.'}
-                            </div>
+                            <div class="bg-error/10 p-4 rounded-lg border border-error/20 whitespace-pre-wrap font-mono text-xs">${errorMessage}</div>
+                            ${result.exit_code !== undefined ? `<div class="text-[9px] uppercase tracking-widest opacity-50 px-1">Exit Code: ${result.exit_code}</div>` : ''}
                         </div>`;
                     }
                 } catch (error) {
@@ -472,7 +484,7 @@ window.initEditor = (exercise) => {
                                         <pre class="bg-black/20 p-2 rounded border border-white/5 font-mono ${isCorrect ? 'text-success' : 'text-error'}">${actualOutput || (result.stderr ? 'ERROR' : '(vacío)')}</pre>
                                     </div>
                                 </div>
-                                ${result.stderr ? `<div class="mt-2 text-error font-mono text-[10px] bg-error/5 p-2 rounded border border-error/10">${result.stderr}</div>` : ''}
+                                ${result.stderr ? `<div class="mt-2 text-error font-mono text-[10px] bg-error/5 p-2 rounded border border-error/10">${cleanTraceback(result.stderr)}</div>` : ''}
                             </div>
                         `;
                     }
@@ -497,6 +509,14 @@ window.initEditor = (exercise) => {
                     ` + resultsHTML + '</div>';
 
                     consoleOutput.innerHTML = resultsHTML;
+                    
+                    // --- SAVE PROGRESS TO DB ---
+                    const user = await api.getUser();
+                    const estado = allPassed ? 2 : 1; // 2: correcto, 1: a medias
+                    if (user && user.id && exercise && exercise.id) {
+                        console.log(`[EDITOR] Saving progress for user ${user.id}, exercise ${exercise.id}, status ${estado}`);
+                        await api.saveExerciseProgress(user.id, exercise.id, code, estado);
+                    }
 
                 } catch (error) {
                     console.error('[EDITOR] Error evaluating solution:', error);

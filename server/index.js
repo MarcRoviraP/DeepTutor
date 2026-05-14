@@ -319,6 +319,65 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// --- User Exercise Progress ---
+app.get('/api/user_ejer', async (req, res) => {
+  const { user_id, ejer_id } = req.query;
+  try {
+    let query = '/user_ejer';
+    if (user_id && ejer_id) {
+      query += `?user_id=eq.${user_id}&ejer_id=eq.${ejer_id}`;
+    } else if (user_id) {
+      query += `?user_id=eq.${user_id}`;
+    }
+    const progress = await db.request(query);
+    res.json(progress || []);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener progreso:', error.message);
+    res.status(500).json({ error: 'Error al obtener progreso' });
+  }
+});
+
+app.post('/api/user_ejer', async (req, res) => {
+  try {
+    const { user_id, ejer_id, envio, estado } = req.body;
+    const payload = {
+      user_id: parseInt(user_id),
+      ejer_id: parseInt(ejer_id),
+      envio,
+      estado: parseInt(estado),
+      envio_send_time: new Error().stack ? new Date().toISOString() : new Date().toISOString() // Server time
+    };
+    
+    // Primero buscamos si ya existe
+    const existing = await db.request(`/user_ejer?user_id=eq.${user_id}&ejer_id=eq.${ejer_id}`);
+    
+    let result;
+    if (Array.isArray(existing) && existing.length > 0) {
+      // Actualizamos (asumiendo que tiene un ID o usando el endpoint con filtros si la API lo soporta)
+      // La doc dice PUT /tabla/<id>. Si no tenemos ID, probamos con el primer ID encontrado.
+      const id = existing[0].id;
+      if (id) {
+        result = await db.request(`/user_ejer/${id}`, 'PUT', payload);
+      } else {
+        // Si no hay ID único, tal vez la API no soporta PUT sin él. 
+        // Intentamos POST de nuevo o error.
+        throw new Error('No se pudo encontrar el ID para actualizar el progreso.');
+      }
+    } else {
+      // Creamos
+      result = await db.request('/user_ejer', 'POST', payload);
+    }
+    
+    res.json(result);
+  } catch (error) {
+    if (error.message && error.message.includes('"error": "0"')) {
+      return res.json({ success: true });
+    }
+    console.error('[SERVER] Error al guardar progreso:', error.message);
+    res.status(500).json({ error: 'Error al guardar progreso', details: error.message });
+  }
+});
+
 // --- Code Execution ---
 app.post('/api/execute', async (req, res) => {
   const { code, language, input } = req.body;

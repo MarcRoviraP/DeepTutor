@@ -27,6 +27,15 @@ class Router {
 
     async navigate(route, params = null, pushState = true) {
         console.log(`Navigating to ${route}`, params);
+
+        // --- AUTH GUARD ---
+        const user = localStorage.getItem('user');
+        if (!user && route !== 'login') {
+            console.warn('[ROUTER] No user found. Redirecting to login.');
+            window.location.href = '/';
+            return;
+        }
+        // ------------------
         
         if (this.routes[route]) {
             if (pushState) {
@@ -71,9 +80,14 @@ class Router {
 
     async renderExercises() {
         console.log('[ROUTER] Rendering exercises view...');
+        const user = await api.getUser();
         const exercises = await api.getExercises();
-        console.log(`[ROUTER] Loaded ${exercises.length} exercises. Updating container.`);
-        this.container.innerHTML = Exercises({ exercises });
+        let progress = [];
+        if (user && user.id) {
+            progress = await api.getExerciseProgress(user.id);
+        }
+        console.log(`[ROUTER] Loaded ${exercises.length} exercises and ${progress.length} progress records. Updating container.`);
+        this.container.innerHTML = Exercises({ exercises, progress });
     }
 
     async renderEditor(params) {

@@ -15,14 +15,33 @@ export const Exercises = (data) => {
     }, {});
 
     const renderExerciseCard = (ex) => {
-        // Replace \n with <br/> to respect line breaks
         const description = ex.description || 'No hay descripción disponible.';
         const formattedDescription = description.replace(/\n/g, '<br/>');
+        
+        // Find progress for this exercise
+        const exProgress = (data.progress || []).find(p => p.ejer_id == ex.id);
+        const estado = exProgress ? exProgress.estado : 0;
+        
+        // Define colors and icons based on status
+        let statusColorClass = 'text-primary';
+        let statusIcon = 'terminal';
+        let statusText = ex.difficulty;
+        let cardBorderClass = 'border-outline-variant';
+        
+        if (estado === 1) {
+            statusColorClass = 'text-[#ff9800]'; // Orange
+            statusIcon = 'pending';
+            cardBorderClass = 'border-[#ff9800]/50';
+        } else if (estado === 2) {
+            statusColorClass = 'text-[#4caf50]'; // Green
+            statusIcon = 'check_circle';
+            cardBorderClass = 'border-[#4caf50]/50 bg-[#4caf50]/5';
+        }
 
         return `
-        <div class="bg-surface-container border border-outline-variant p-6 rounded-lg flex flex-col gap-4 hover:border-primary transition-all cursor-pointer group" onclick="router.navigate('editor', {id: '${ex.id}'})">
+        <div class="bg-surface-container border ${cardBorderClass} p-6 rounded-lg flex flex-col gap-4 hover:border-primary transition-all cursor-pointer group" onclick="router.navigate('editor', {id: '${ex.id}'})">
             <div class="flex justify-between items-start">
-                <span class="material-symbols-outlined text-primary text-3xl">terminal</span>
+                <span class="material-symbols-outlined ${statusColorClass} text-3xl">${statusIcon}</span>
                 <span class="px-2 py-1 bg-surface-container-high rounded text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">${ex.difficulty}</span>
             </div>
             <div>
@@ -31,7 +50,10 @@ export const Exercises = (data) => {
             </div>
             <div class="mt-auto pt-4 flex items-center justify-between text-xs font-bold text-outline uppercase tracking-widest">
                 <span>30 mins</span>
-                <span class="flex items-center gap-1 group-hover:text-primary transition-colors">Empezar Laboratorio <span class="material-symbols-outlined text-sm">arrow_forward</span></span>
+                <span class="flex items-center gap-1 group-hover:text-primary transition-colors">
+                    ${estado === 2 ? 'Repasar Laboratorio' : (estado === 1 ? 'Continuar Laboratorio' : 'Empezar Laboratorio')} 
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </span>
             </div>
         </div>
         `;

@@ -218,6 +218,30 @@ export const api = {
             console.error('[API] Execution request failed:', error);
             return { status: 'error', message: error.message };
         }
+    },
+    
+    getExerciseProgress: async (user_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/user_ejer?user_id=${user_id}`);
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Error fetching exercise progress:', error);
+            return [];
+        }
+    },
+    
+    saveExerciseProgress: async (user_id, ejer_id, envio, estado) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/user_ejer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, ejer_id, envio, estado })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Error saving exercise progress:', error);
+            return null;
+        }
     }
 };
 
