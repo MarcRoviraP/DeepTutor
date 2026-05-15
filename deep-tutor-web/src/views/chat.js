@@ -96,7 +96,7 @@ export const Chat = (data) => {
                     </div>
                 </header>
 
-                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth bg-[radial-gradient(rgba(192,193,255,0.05)_1px,transparent_1px)] [background-size:24px_24px]">
                     ${messages.length === 0 ? `
                         <div class="h-full flex flex-col items-center justify-center text-center opacity-40">
                             <span class="material-symbols-outlined text-6xl mb-4 text-primary">smart_toy</span>
@@ -105,20 +105,26 @@ export const Chat = (data) => {
                     ` : messages.map(msg => `
                         <div class="flex flex-col gap-6">
                             <div class="flex justify-end">
-                                <div class="max-w-[85%] bg-primary-container text-on-primary-container p-4 rounded-2xl rounded-tr-none shadow-sm">
+                                <div class="max-w-[85%] bg-surface-container-highest text-on-surface-variant p-4 rounded-2xl rounded-tr-none border border-outline-variant shadow-sm transition-all hover:border-outline-variant hover:bg-surface-container-highest/80">
                                     <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed">
                                         ${renderMarkdown(msg.mensaje)}
                                     </div>
-                                    <p class="text-[9px] mt-2 font-bold uppercase opacity-50 text-right">Tú</p>
+                                    <div class="flex items-center justify-end gap-2 mt-2 opacity-40">
+                                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">Usuario</p>
+                                        <span class="material-symbols-outlined text-xs">person</span>
+                                    </div>
                                 </div>
                             </div>
                             ${msg.respuesta ? `
                                 <div class="flex justify-start">
-                                    <div class="max-w-[85%] bg-surface-container-highest border border-outline-variant text-on-surface p-4 rounded-2xl rounded-tl-none shadow-sm">
-                                        <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-surface-container-lowest prose-pre:p-4 prose-pre:rounded-xl">
+                                    <div class="max-w-[85%] bg-primary/5 backdrop-blur-md border border-primary/20 border-l-4 border-l-primary text-on-surface p-4 rounded-2xl rounded-tl-none shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all hover:bg-primary/10 group/msg">
+                                        <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-surface-container-lowest/50 prose-pre:border prose-pre:border-outline-variant/30 prose-pre:p-4 prose-pre:rounded-xl prose-code:text-primary-fixed">
                                             ${renderMarkdown(msg.respuesta)}
                                         </div>
-                                        <p class="text-[9px] mt-2 font-bold uppercase opacity-50">Mentor IA</p>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <span class="material-symbols-outlined text-primary text-xs font-variation-fill">smart_toy</span>
+                                            <p class="text-[9px] font-bold uppercase tracking-widest text-primary">Mentor Arquitecto</p>
+                                        </div>
                                     </div>
                                 </div>
                             ` : ''}
@@ -271,25 +277,9 @@ window.addEventListener('message', (e) => {
             `;
         }).join('');
 
-        // Añadir botones de moods
-        const moods = [
-            { id: 'normal', icon: 'visibility', label: 'Normal', color: 'text-cyan-400' },
-            { id: 'error', icon: 'error', label: 'Error', color: 'text-red-500' },
-            { id: 'alert', icon: 'warning', label: 'Alerta', color: 'text-amber-500' },
-            { id: 'love', icon: 'favorite', label: 'Love', color: 'text-pink-500' }
-        ];
-        
-        const moodsHTML = `
-            <div class="col-span-full border-t border-outline-variant my-1 pt-2"></div>
-            ${moods.map(m => `
-                <button onclick="window.setMentorMood('${m.id}')" class="text-[9px] py-1.5 px-2 bg-surface-container hover:bg-primary/10 border border-outline-variant rounded-lg transition-all flex items-center justify-center gap-1 font-bold ${m.color}">
-                    <span class="material-symbols-outlined !text-[14px]">${m.icon}</span>
-                    ${m.label.toUpperCase()}
-                </button>
-            `).join('')}
-        `;
+   
 
-        container.innerHTML = buttonsHTML + moodsHTML;
+        container.innerHTML = buttonsHTML;
     }
 });
 
@@ -443,12 +433,15 @@ window.initChat = (chatHistory = []) => {
 
         // 1. Inyectar mensaje del usuario inmediatamente
         const userMsgHTML = `
-            <div class="flex justify-end">
-                <div class="max-w-[85%] bg-primary-container text-on-primary-container p-4 rounded-2xl rounded-tr-none shadow-sm animate-fade-in">
-                    <div class="prose prose-sm max-w-none prose-p:leading-relaxed">
+            <div class="flex justify-end animate-fade-in">
+                <div class="max-w-[85%] bg-surface-container-highest text-on-surface-variant p-4 rounded-2xl rounded-tr-none border border-outline-variant shadow-sm transition-all hover:border-outline-variant hover:bg-surface-container-highest/80">
+                    <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed">
                         ${renderMarkdown(message)}
                     </div>
-                    <p class="text-[9px] mt-2 font-bold uppercase opacity-50 text-right">Tú</p>
+                    <div class="flex items-center justify-end gap-2 mt-2 opacity-40">
+                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">Usuario</p>
+                        <span class="material-symbols-outlined text-xs">person</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -520,12 +513,15 @@ window.initChat = (chatHistory = []) => {
 
             // 2. Inyectar respuesta de la IA
             const aiMsgHTML = `
-                <div class="flex justify-start">
-                    <div class="max-w-[85%] bg-surface-container-highest border border-outline-variant text-on-surface p-4 rounded-2xl rounded-tl-none shadow-sm animate-fade-in">
-                        <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed">
+                <div class="flex justify-start animate-fade-in">
+                    <div class="max-w-[85%] bg-primary/5 backdrop-blur-md border border-primary/20 border-l-4 border-l-primary text-on-surface p-4 rounded-2xl rounded-tl-none shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all hover:bg-primary/10">
+                        <div class="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-surface-container-lowest/50 prose-pre:border prose-pre:border-outline-variant/30 prose-pre:p-4 prose-pre:rounded-xl prose-code:text-primary-fixed">
                             ${renderMarkdown(aiText)}
                         </div>
-                        <p class="text-[9px] mt-2 font-bold uppercase opacity-50 text-primary">Mentor Arquitecto</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="material-symbols-outlined text-primary text-xs font-variation-fill">smart_toy</span>
+                            <p class="text-[9px] font-bold uppercase tracking-widest text-primary">Mentor Arquitecto</p>
+                        </div>
                     </div>
                 </div>
             `;

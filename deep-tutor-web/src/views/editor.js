@@ -616,13 +616,29 @@ ${lastError || lastOutput || 'Aún no he ejecutado el código o no hay errores r
 
 ¿Podrías explicarme qué estoy haciendo mal y darme pistas de cómo solucionarlo? No me des la solución completa directamente, prefiero aprender guiado.`;
 
+                    // 1. Cargar configuración del Mentor (instrucciones de sistema)
+                    let systemInstruction = "";
+                    try {
+                        const [rulesRes, skillsRes] = await Promise.all([
+                            fetch('/dashboard/assets/mentor/rules.md'),
+                            fetch('/dashboard/assets/mentor/skills.md')
+                        ]);
+                        systemInstruction = `${await rulesRes.text()}\n\n${await skillsRes.text()}`;
+                    } catch (e) {
+                        systemInstruction = "Eres un mentor de programación experto que ayuda a los alumnos sin darles la solución directa.";
+                    }
+
+                    // 2. Obtener respuesta REAL de la IA
+                    const aiResponse = await api.getAIResponse(systemInstruction, prompt);
+                    const responseText = aiResponse?.text || '¡Hola! He recibido tu consulta. Vamos al chat para analizarlo juntos...';
+
                     const title = `Pista ejercicio ${exercise?.title || 'Sandbox'}`;
                     // Create new conversation
                     const newConv = await api.createConversation(user.id, title);
                     if (!newConv) throw new Error('No se pudo crear la conversación');
 
-                    // Save the contextual message
-                    await api.saveChatMessage(user.id, newConv.id, prompt, '¡Claro! He analizado tu código y el problema que planteas. Vamos a ver...');
+                    // Save the contextual message with REAL AI response
+                    await api.saveChatMessage(user.id, newConv.id, prompt, responseText);
 
                     // Navigate to chat
                     window.location.hash = `#/chat/${newConv.id}`;

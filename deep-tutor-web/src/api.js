@@ -242,6 +242,21 @@ export const api = {
             console.error('[API] Error saving exercise progress:', error);
             return null;
         }
+    },
+    
+    getAIResponse: async (systemInstruction, message, history = []) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ systemInstruction, message, history })
+            });
+            if (!response.ok) throw new Error('AI API request failed');
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Error getting AI response:', error);
+            return null;
+        }
     }
 };
 
