@@ -161,6 +161,20 @@ app.get('/api/topics', async (req, res) => {
   }
 });
 
+app.get('/api/topics/:id', async (req, res) => {
+  try {
+    const topic = await db.request(`/topics/${req.params.id}`);
+    res.json(topic);
+  } catch (error) {
+    try {
+      const results = await db.request(`/topics?id=eq.${req.params.id}`);
+      res.json(results[0] || null);
+    } catch (e) {
+      res.status(500).json({ error: 'Error al obtener tema' });
+    }
+  }
+});
+
 app.get('/api/users', async (req, res) => {
   try {
     const users = await db.request('/usuarios');
@@ -337,6 +351,18 @@ app.get('/api/user_ejer', async (req, res) => {
   }
 });
 
+app.get('/api/user_ejer/stats', async (req, res) => {
+  const { user_id } = req.query;
+  try {
+    const endpoint = user_id ? `/user_ejer/stats?user_id=eq.${user_id}` : '/user_ejer/stats';
+    const stats = await db.request(endpoint);
+    res.json(stats);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener estadísticas:', error.message);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
+
 app.post('/api/user_ejer', async (req, res) => {
   try {
     const { user_id, ejer_id, envio, estado } = req.body;
@@ -375,6 +401,44 @@ app.post('/api/user_ejer', async (req, res) => {
     }
     console.error('[SERVER] Error al guardar progreso:', error.message);
     res.status(500).json({ error: 'Error al guardar progreso', details: error.message });
+  }
+});
+
+// --- User Progress (Global) ---
+app.get('/api/progreso_usuario', async (req, res) => {
+  try {
+    const queryString = new URLSearchParams(req.query).toString();
+    const endpoint = queryString ? `/progreso_usuario?${queryString}` : '/progreso_usuario';
+    const progress = await db.request(endpoint);
+    res.json(progress || []);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener progreso global:', error.message);
+    res.status(500).json({ error: 'Error al obtener progreso de usuario' });
+  }
+});
+
+app.post('/api/progreso_usuario', async (req, res) => {
+  try {
+    const result = await db.request('/progreso_usuario', 'POST', req.body);
+    res.json(result);
+  } catch (error) {
+    if (error.message && error.message.includes('"error": "0"')) {
+      return res.json({ success: true });
+    }
+    console.error('[SERVER] Error al crear progreso global:', error.message);
+    res.status(500).json({ error: 'Error al crear progreso de usuario' });
+  }
+});
+
+app.patch('/api/progreso_usuario', async (req, res) => {
+  try {
+    const queryString = new URLSearchParams(req.query).toString();
+    const endpoint = queryString ? `/progreso_usuario?${queryString}` : '/progreso_usuario';
+    const result = await db.request(endpoint, 'PATCH', req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('[SERVER] Error al actualizar progreso global:', error.message);
+    res.status(500).json({ error: 'Error al actualizar progreso de usuario' });
   }
 });
 

@@ -29,12 +29,89 @@ export const api = {
         return { ...DEFAULT_USER, id: 25 };
     },
     
-    getSessions: async () => {
-        // Mock data for now as we don't have a backend endpoint for this yet
-        return [
-            { id: 1, title: "Initial Setup", date: "Today", duration: "10 mins", type: "exercise" },
-            { id: 2, title: "Python Basics", date: "Yesterday", duration: "25 mins", type: "exercise" }
-        ];
+    getSessions: async (user_id) => {
+        try {
+            // Fetch both conversations and exercises to show as "recent activity"
+            const [conversations, exercises] = await Promise.all([
+                api.getConversations(user_id),
+                api.getExerciseProgress(user_id)
+            ]);
+
+            const sessions = [
+                ...conversations.map(c => ({
+                    id: c.id,
+                    title: c.nombre || "Conversación con Mentor",
+                    date: new Date(c.started_at).toLocaleDateString(),
+                    duration: "Sesión de Chat",
+                    type: "chat",
+                    timestamp: new Date(c.started_at).getTime()
+                })),
+                ...exercises.map(e => ({
+                    id: e.id,
+                    title: `Ejercicio #${e.ejer_id}`,
+                    date: new Date(e.envio_send_time).toLocaleDateString(),
+                    duration: e.estado === 1 ? "Completado" : "Pendiente",
+                    type: "exercise",
+                    timestamp: new Date(e.envio_send_time).getTime()
+                }))
+            ];
+
+            // Sort by most recent
+            return sessions.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+        } catch (error) {
+            console.error('[API] Error fetching sessions:', error);
+            return [];
+        }
+    },
+
+    getDashboardData: async () => {
+        const user = await api.getUser();
+        if (!user || !user.id) return { user, sessions: [], progress: null };
+
+        try {
+            // Fetch stats and sessions in parallel
+            const [sessions, exerciseStats, userProgress] = await Promise.all([
+                api.getSessions(user.id),
+                fetch(`${BASE_URL}/api/user_ejer/stats?user_id=${user.id}`).then(res => res.json()),
+                fetch(`${BASE_URL}/api/progreso_usuario?usuario_id=eq.${user.id}&order=updated_at.desc&limit=1`).then(res => res.json())
+            ]);
+
+            console.log('[API] Dashboard Stats Received:', { exerciseStats });
+
+            // Calculate stats dynamically
+            // Extract exercises count from stats or fallback to existing logic
+            let exercisesDone = 0;
+            if (exerciseStats) {
+                // Handle both single object or array response
+                const statsObj = Array.isArray(exerciseStats) ? exerciseStats[0] : exerciseStats;
+                exercisesDone = statsObj.cantidad_ejercicios || statsObj.total_completados || statsObj.count || 0;
+            }
+
+            const stats = {
+                exercisesDone: exercisesDone,
+                streak: 1, // Placeholder for real streak logic
+                level: user.nivel || "Principiante"
+            };
+
+            let currentGoal = userProgress[0] || null;
+            if (currentGoal && currentGoal.topic_id) {
+                try {
+                    const topic = await fetch(`${BASE_URL}/api/topics/${currentGoal.topic_id}`).then(res => res.json());
+                    currentGoal.topic_name = topic.nombre || topic[0]?.nombre || "Tema desconocido";
+                } catch (e) {
+                    currentGoal.topic_name = "Continuar aprendizaje";
+                }
+            }
+
+            return {
+                user: { ...user, stats },
+                sessions,
+                currentGoal
+            };
+        } catch (error) {
+            console.error('[API] Error fetching dashboard data:', error);
+            return { user, sessions: [], currentGoal: null };
+        }
     },
     
     getExercises: async () => {
@@ -71,6 +148,7 @@ export const api = {
                 examples: ex.ejemplos,
                 requirements: ex.requisitos,
                 testCases: ex.casos_prueba,
+                topic_id: ex.topic_id,
                 time: "30 mins",
                 completed: false
             }));
@@ -193,6 +271,7 @@ export const api = {
                 examples: data.ejemplos,
                 requirements: data.requisitos,
                 testCases: data.casos_prueba,
+                topic_id: data.topic_id,
                 time: "30 mins",
                 completed: false
             };
@@ -256,6 +335,47 @@ export const api = {
         } catch (error) {
             console.error('[API] Error getting AI response:', error);
             return null;
+        }
+    },
+    
+    updateUserTopicProgress: async (userId, topicId) => {
+        try {
+            console.log(`[API] Updating progress for user ${userId} on topic ${topicId}`);
+            
+            // 1. Check if record exists
+            const res = await fetch(`${BASE_URL}/api/progreso_usuario?usuario_id=eq.${userId}&topic_id=eq.${topicId}`);
+            const data = await res.json();
+            
+            if (data && data.length > 0) {
+                const record = data[0];
+                const newScore = (record.score || 0) + 1;
+                
+                // 2. Update existing record
+                console.log(`[API] Incrementing score to ${newScore} for record ${record.id}`);
+                await fetch(`${BASE_URL}/api/progreso_usuario?id=eq.${record.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        score: newScore,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+            } else {
+                // 3. Create new record
+                console.log(`[API] Creating new progress record for topic ${topicId}`);
+                await fetch(`${BASE_URL}/api/progreso_usuario`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        usuario_id: userId, 
+                        topic_id: topicId, 
+                        nivel: 1, 
+                        score: 1 
+                    })
+                });
+            }
+        } catch (error) {
+            console.error('[API] Error updating topic progress:', error);
         }
     }
 };

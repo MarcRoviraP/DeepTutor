@@ -73,9 +73,8 @@ class Router {
     }
 
     async renderDashboard() {
-        const user = await api.getUser();
-        const sessions = await api.getSessions();
-        this.container.innerHTML = Dashboard({ user, sessions });
+        const dashboardData = await api.getDashboardData();
+        this.container.innerHTML = Dashboard(dashboardData);
     }
 
     async renderExercises() {

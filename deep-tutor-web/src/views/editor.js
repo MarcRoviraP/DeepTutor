@@ -549,6 +549,11 @@ window.initEditor = (exercise) => {
                     if (user && user.id && exercise && exercise.id) {
                         console.log(`[EDITOR] Saving progress for user ${user.id}, exercise ${exercise.id}, status ${estado}`);
                         await api.saveExerciseProgress(user.id, exercise.id, code, estado);
+                        
+                        // Si todo está correcto, actualizamos el score global del tema
+                        if (allPassed && exercise.topic_id) {
+                            await api.updateUserTopicProgress(user.id, exercise.topic_id);
+                        }
                     }
 
                 } catch (error) {
