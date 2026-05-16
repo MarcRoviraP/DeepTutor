@@ -260,6 +260,11 @@ window.initEditor = (exercise) => {
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
 
     require(['vs/editor/editor.main'], function() {
+        // Enhance Syntax Highlighting
+        enhancePythonSyntax();
+        enhanceJavaSyntax();
+        enhanceLuaSyntax();
+
         // Initialize Editor
         const editor = monaco.editor.create(container, {
             value: exercise?.initial_code || LANGUAGE_CONFIG.python.defaultCode,
@@ -277,6 +282,16 @@ window.initEditor = (exercise) => {
             },
             fixedOverflowWidgets: true
         });
+
+        // Force syntax refresh
+        setTimeout(() => {
+            const model = editor.getModel();
+            if (model) {
+                const currentLang = langSelector.value;
+                const config = LANGUAGE_CONFIG[currentLang];
+                monaco.editor.setModelLanguage(model, config.monaco);
+            }
+        }, 100);
 
         // --- AUTOSAVE LOGIC ---
         const getSaveKey = () => `deeptutor_code_${exercise?.id || 'sandbox'}_${langSelector.value}`;
@@ -584,6 +599,7 @@ window.initEditor = (exercise) => {
         // Register Providers
         registerPythonProviders();
         registerJavaProviders();
+        registerLuaProviders();
 
         // AYUDA IA handler
         const aiHelpBtn = document.getElementById('ai-help-btn');
@@ -660,6 +676,178 @@ ${lastError || lastOutput || 'Aún no he ejecutado el código o no hay errores r
     });
 };  
 
+/**
+ * Enhances Python syntax highlighting to support f-string interpolation
+ */
+const enhancePythonSyntax = () => {
+    console.log('[EDITOR] Setting up Python enhancement hook...');
+    
+    // This hook ensures our provider is applied AFTER Monaco's default one loads
+    monaco.languages.onLanguage('python', () => {
+        console.log('[EDITOR] Applying custom Python Monarch rules...');
+        monaco.languages.setMonarchTokensProvider('python', {
+            defaultToken: '',
+            tokenPostfix: '.py',
+            keywords: [
+                'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
+                'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'None',
+                'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'True', 'try', 'while', 'with', 'yield'
+            ],
+            builtins: [
+                'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'breakpoint', 'bytearray', 'bytes',
+                'callable', 'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir',
+                'divmod', 'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset',
+                'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int',
+                'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals', 'map', 'max',
+                'memoryview', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
+                'property', 'range', 'reversed', 'round', 'set', 'setattr', 'slice',
+                'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
+            ],
+            tokenizer: {
+                root: [
+                    [/[a-zA-Z_]\w*/, {
+                        cases: {
+                            '@keywords': 'keyword',
+                            '@builtins': 'type.identifier',
+                            '@default': 'identifier'
+                        }
+                    }],
+                    // F-Strings
+                    [/f"/, { token: 'string.quote', next: '@fstring_double' }],
+                    [/f'/, { token: 'string.quote', next: '@fstring_single' }],
+                    // Strings
+                    [/"/, { token: 'string.quote', next: '@string_double' }],
+                    [/'/, { token: 'string.quote', next: '@string_single' }],
+                    [/[{}()\[\]]/, '@brackets'],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/\d+/, 'number'],
+                    [/#.*$/, 'comment'],
+                ],
+                string_double: [
+                    [/[^\\"]+/, 'string'],
+                    [/\\./, 'string.escape'],
+                    [/"/, { token: 'string.quote', next: '@pop' }],
+                ],
+                string_single: [
+                    [/[^\\']+/, 'string'],
+                    [/\\./, 'string.escape'],
+                    [/'/, { token: 'string.quote', next: '@pop' }],
+                ],
+                fstring_double: [
+                    [/\{/, { token: 'delimiter.bracket', next: '@fstring_expression' }],
+                    [/[^\\"{]+/, 'string'],
+                    [/\\./, 'string.escape'],
+                    [/"/, { token: 'string.quote', next: '@pop' }],
+                ],
+                fstring_single: [
+                    [/\{/, { token: 'delimiter.bracket', next: '@fstring_expression' }],
+                    [/[^\\'{]+/, 'string'],
+                    [/\\./, 'string.escape'],
+                    [/'/, { token: 'string.quote', next: '@pop' }],
+                ],
+                fstring_expression: [
+                    [/\}/, { token: 'delimiter.bracket', next: '@pop' }],
+                    [/[a-z_]\w*/i, {
+                        cases: {
+                            '@keywords': 'keyword',
+                            '@builtins': 'type.identifier',
+                            '@default': 'identifier'
+                        }
+                    }],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/[=><!~?:&|+\-*\/\^%]+/, 'operator'],
+                    [/\d+/, 'number'],
+                    [/[\[\]\(\),]/, '@brackets'],
+                    [/\./, 'delimiter'],
+                ]
+            }
+        });
+    });
+};
+
+/**
+ * Enhances Java syntax highlighting to support STR templates (Java 21)
+ */
+const enhanceJavaSyntax = () => {
+    console.log('[EDITOR] Setting up Java enhancement hook...');
+    monaco.languages.onLanguage('java', () => {
+        console.log('[EDITOR] Applying custom Java Monarch rules...');
+        monaco.languages.setMonarchTokensProvider('java', {
+            defaultToken: '',
+            tokenPostfix: '.java',
+            keywords: ['abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extends', 'final', 'finally', 'float', 'for', 'goto', 'if', 'implements', 'import', 'instanceof', 'int', 'interface', 'long', 'native', 'new', 'package', 'private', 'protected', 'public', 'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this', 'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while'],
+            tokenizer: {
+                root: [
+                    [/[a-z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'identifier' } }],
+                    [/[A-Z][\w$]*/, 'type.identifier'],
+                    [/STR\s*\./, 'keyword'], // Java 21 String Templates
+                    [/"/, { token: 'string.quote', next: '@string_double' }],
+                    [/[{}()\[\]]/, '@brackets'],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/\d+/, 'number'],
+                ],
+                string_double: [
+                    [/[^\\"{]+/, 'string'],
+                    [/\\\{/, { token: 'delimiter.bracket', next: '@string_expression' }], // Interpolation \{...}
+                    [/\\./, 'string.escape'],
+                    [/"/, { token: 'string.quote', next: '@pop' }],
+                ],
+                string_expression: [
+                    [/\}/, { token: 'delimiter.bracket', next: '@pop' }],
+                    [/[a-z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'identifier' } }],
+                    [/[A-Z][\w$]*/, 'type.identifier'],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/[=><!~?:&|+\-*\/\^%]+/, 'operator'],
+                    [/\d+/, 'number'],
+                ]
+            }
+        });
+    });
+};
+
+/**
+ * Enhances Lua syntax highlighting to support f-strings
+ */
+const enhanceLuaSyntax = () => {
+    console.log('[EDITOR] Setting up Lua enhancement hook...');
+    monaco.languages.onLanguage('lua', () => {
+        console.log('[EDITOR] Applying custom Lua Monarch rules...');
+        monaco.languages.setMonarchTokensProvider('lua', {
+            defaultToken: '',
+            tokenPostfix: '.lua',
+            keywords: ['and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until', 'while'],
+            tokenizer: {
+                root: [
+                    [/[a-zA-Z_]\w*/, { cases: { '@keywords': 'keyword', '@default': 'identifier' } }],
+                    // F-Strings for Lua (custom support)
+                    [/f"/, { token: 'string.quote', next: '@fstring_double' }],
+                    [/"/, { token: 'string.quote', next: '@string_double' }],
+                    [/[{}()\[\]]/, '@brackets'],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/\d+/, 'number'],
+                ],
+                string_double: [
+                    [/[^\\"]+/, 'string'],
+                    [/\\./, 'string.escape'],
+                    [/"/, { token: 'string.quote', next: '@pop' }],
+                ],
+                fstring_double: [
+                    [/[^\\"{]+/, 'string'],
+                    [/\{/, { token: 'delimiter.bracket', next: '@fstring_expression' }],
+                    [/\\./, 'string.escape'],
+                    [/"/, { token: 'string.quote', next: '@pop' }],
+                ],
+                fstring_expression: [
+                    [/\}/, { token: 'delimiter.bracket', next: '@pop' }],
+                    [/[a-zA-Z_]\w*/, { cases: { '@keywords': 'keyword', '@default': 'identifier' } }],
+                    [/[ \t\r\n]+/, 'white'],
+                    [/[=><!~?:&|+\-*\/\^%]+/, 'operator'],
+                ]
+            }
+        });
+    });
+};
+
 const registerPythonProviders = () => {
     // Only register once
     if (window.pythonProvidersRegistered) return;
@@ -668,9 +856,44 @@ const registerPythonProviders = () => {
     const keywords = ['False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield'];
     const builtins = ['abs', 'all', 'any', 'ascii', 'bin', 'bool', 'breakpoint', 'bytearray', 'bytes', 'callable', 'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod', 'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print', 'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'];
 
+    const MEMBER_PROVIDERS = {
+        'list': [
+            { label: 'append', detail: 'list.append(x)', doc: 'Add an item to the end of the list.' },
+            { label: 'extend', detail: 'list.extend(iterable)', doc: 'Extend the list by appending all the items from the iterable.' },
+            { label: 'insert', detail: 'list.insert(i, x)', doc: 'Insert an item at a given position.' },
+            { label: 'remove', detail: 'list.remove(x)', doc: 'Remove the first item from the list whose value is equal to x.' },
+            { label: 'pop', detail: 'list.pop([i])', doc: 'Remove the item at the given position in the list, and return it.' },
+            { label: 'clear', detail: 'list.clear()', doc: 'Remove all items from the list.' },
+            { label: 'index', detail: 'list.index(x[, start[, end]])', doc: 'Return zero-based index in the list of the first item whose value is equal to x.' },
+            { label: 'count', detail: 'list.count(x)', doc: 'Return the number of times x appears in the list.' },
+            { label: 'sort', detail: 'list.sort(*, key=None, reverse=False)', doc: 'Sort the items of the list in place.' },
+            { label: 'reverse', detail: 'list.reverse()', doc: 'Reverse the elements of the list in place.' }
+        ],
+        'dict': [
+            { label: 'get', detail: 'dict.get(key[, default])', doc: 'Return the value for key if key is in the dictionary, else default.' },
+            { label: 'items', detail: 'dict.items()', doc: 'Return a new view of the dictionary’s items.' },
+            { label: 'keys', detail: 'dict.keys()', doc: 'Return a new view of the dictionary’s keys.' },
+            { label: 'values', detail: 'dict.values()', doc: 'Return a new view of the dictionary’s values.' },
+            { label: 'update', detail: 'dict.update([other])', doc: 'Update the dictionary with the key/value pairs from other.' },
+            { label: 'pop', detail: 'dict.pop(key[, default])', doc: 'Remove specified key and return the corresponding value.' }
+        ],
+        'str': [
+            { label: 'split', detail: 'str.split(sep=None, maxsplit=-1)', doc: 'Return a list of the words in the string, using sep as the delimiter string.' },
+            { label: 'join', detail: 'str.join(iterable)', doc: 'Return a string which is the concatenation of the strings in iterable.' },
+            { label: 'strip', detail: 'str.strip([chars])', doc: 'Return a copy of the string with the leading and trailing characters removed.' },
+            { label: 'lower', detail: 'str.lower()', doc: 'Return a copy of the string with all the cased characters converted to lowercase.' },
+            { label: 'upper', detail: 'str.upper()', doc: 'Return a copy of the string with all the cased characters converted to uppercase.' },
+            { label: 'replace', detail: 'str.replace(old, new[, count])', doc: 'Return a copy of the string with all occurrences of substring old replaced by new.' }
+        ]
+    };
+
     monaco.languages.registerCompletionItemProvider('python', {
+        triggerCharacters: ['.'],
         provideCompletionItems: (model, position) => {
             const word = model.getWordUntilPosition(position);
+            const lineContent = model.getLineContent(position.lineNumber);
+            const charBefore = lineContent[position.column - 2];
+            
             const range = {
                 startLineNumber: position.lineNumber,
                 endLineNumber: position.lineNumber,
@@ -679,66 +902,61 @@ const registerPythonProviders = () => {
             };
 
             const text = model.getValue();
+
+            // Member access logic for Python
+            if (charBefore === '.') {
+                const match = lineContent.substring(0, position.column - 1).match(/([a-zA-Z0-9_]+)\.$/);
+                if (match) {
+                    const objectName = match[1];
+                    let type = null;
+
+                    // Simple inference
+                    if (new RegExp(`\\b${objectName}\\s*=\\s*\\[`).test(text)) type = 'list';
+                    else if (new RegExp(`\\b${objectName}\\s*=\\s*\\{`).test(text)) type = 'dict';
+                    else if (new RegExp(`\\b${objectName}\\s*=\\s*["']`).test(text)) type = 'str';
+                    else if (new RegExp(`\\b${objectName}\\s*=\\s*list\\(`).test(text)) type = 'list';
+                    else if (new RegExp(`\\b${objectName}\\s*=\\s*dict\\(`).test(text)) type = 'dict';
+
+                    const members = MEMBER_PROVIDERS[type];
+                    if (members) {
+                        return {
+                            suggestions: members.map(m => ({
+                                label: m.label,
+                                kind: monaco.languages.CompletionItemKind.Method,
+                                insertText: m.label + '(${1})',
+                                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                                range: range,
+                                detail: m.detail,
+                                documentation: m.doc
+                            }))
+                        };
+                    }
+                }
+            }
             
-            // 1. Encontrar funciones definidas por el usuario (def nombre_funcion)
+            // 1. Encontrar funciones definidas por el usuario
             const userFunctions = [...text.matchAll(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)/g)].map(m => m[1]);
             
-            // 2. Encontrar variables definidas por el usuario (variable = ...)
+            // 2. Encontrar variables definidas por el usuario
             const userVariables = [...text.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g)].map(m => m[1]);
             
-            // Eliminar duplicados y filtrar la palabra que se está escribiendo actualmente
             const uniqueFunctions = [...new Set(userFunctions)].filter(f => f !== word.word);
             const uniqueVariables = [...new Set(userVariables)].filter(v => v !== word.word);
 
             const suggestions = [
-                ...keywords.map(k => ({
-                    label: k,
-                    kind: monaco.languages.CompletionItemKind.Keyword,
-                    insertText: k,
-                    range: range
-                })),
-                ...builtins.map(b => ({
-                    label: b,
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: b + '(${1})',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    range: range,
-                    detail: 'Built-in function'
-                })),
-                ...uniqueFunctions.map(f => ({
-                    label: f,
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: f + '(${1})',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    range: range,
-                    detail: 'User defined function'
-                })),
-                ...uniqueVariables.map(v => ({
-                    label: v,
-                    kind: monaco.languages.CompletionItemKind.Variable,
-                    insertText: v,
-                    range: range,
-                    detail: 'User defined variable'
-                })),
-                {
-                    label: 'def',
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    range: range,
-                    detail: 'Function definition'
-                },
-                {
-                    label: 'ifmain',
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 'if __name__ == "__main__":\n\t${1:main()}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    range: range,
-                    detail: 'Main block'
-                }
+                ...keywords.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range })),
+                ...builtins.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Built-in function' })),
+                ...uniqueFunctions.map(f => ({ label: f, kind: monaco.languages.CompletionItemKind.Function, insertText: f + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'User defined function' })),
+                ...uniqueVariables.map(v => ({ label: v, kind: monaco.languages.CompletionItemKind.Variable, insertText: v, range, detail: 'User defined variable' })),
+                
+                // Snippets
+                { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Function definition' },
+                { label: 'class', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'class ${1:ClassName}:\n\tdef __init__(self, ${2:args}):\n\t\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Class definition' },
+                { label: 'ifmain', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if __name__ == "__main__":\n\t${1:main()}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Main block' },
+                { label: 'tryexcept', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'try:\n\t${1:pass}\nexcept ${2:Exception} as e:\n\t${3:print(e)}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Try-Except block' }
             ];
 
-            return { suggestions: suggestions };
+            return { suggestions };
         }
     });
 };
@@ -749,80 +967,149 @@ const registerJavaProviders = () => {
 
     const keywords = ['abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extends', 'final', 'finally', 'float', 'for', 'goto', 'if', 'implements', 'import', 'instanceof', 'int', 'interface', 'long', 'native', 'new', 'package', 'private', 'protected', 'public', 'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this', 'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while'];
     
-    // Mapping of common Java class methods for "Eclipse-like" feel
+    const IMPORT_MAP = {
+        'Scanner': 'java.util.Scanner',
+        'ArrayList': 'java.util.ArrayList',
+        'HashMap': 'java.util.HashMap',
+        'LinkedList': 'java.util.LinkedList',
+        'List': 'java.util.List',
+        'Map': 'java.util.Map',
+        'Random': 'java.util.Random',
+        'File': 'java.io.File',
+        'IOException': 'java.io.IOException',
+        'LocalDate': 'java.time.LocalDate',
+        'Arrays': 'java.util.Arrays',
+        'Collections': 'java.util.Collections'
+    };
+
     const MEMBER_PROVIDERS = {
         'System.out': [
-            { label: 'println', detail: 'void println(String x)', doc: 'Prints a String and then terminates the line.' },
-            { label: 'print', detail: 'void print(String x)', doc: 'Prints a string.' },
-            { label: 'printf', detail: 'PrintStream printf(String format, Object... args)', doc: 'A convenience method to write a formatted string to this output stream.' }
+            { label: 'println', detail: 'void println(Object x)', doc: 'Prints an Object and then terminates the line.' },
+            { label: 'print', detail: 'void print(Object x)', doc: 'Prints an object.' },
+            { label: 'printf', detail: 'PrintStream printf(String format, Object... args)', doc: 'A convenience method to write a formatted string.' }
         ],
         'String': [
             { label: 'length', detail: 'int length()', doc: 'Returns the length of this string.' },
-            { label: 'substring', detail: 'String substring(int beginIndex)', doc: 'Returns a string that is a substring of this string.' },
+            { label: 'substring', detail: 'String substring(int beginIndex)', doc: 'Returns a substring.' },
             { label: 'equals', detail: 'boolean equals(Object anObject)', doc: 'Compares this string to the specified object.' },
             { label: 'charAt', detail: 'char charAt(int index)', doc: 'Returns the char value at the specified index.' },
-            { label: 'toLowerCase', detail: 'String toLowerCase()', doc: 'Converts all of the characters in this String to lower case.' },
-            { label: 'trim', detail: 'String trim()', doc: 'Returns a string whose value is this string, with all leading and trailing space removed.' },
-            { label: 'split', detail: 'String[] split(String regex)', doc: 'Splits this string around matches of the given regular expression.' },
-            { label: 'contains', detail: 'boolean contains(CharSequence s)', doc: 'Returns true if and only if this string contains the specified sequence of char values.' }
-        ],
-        'Math': [
-            { label: 'abs', detail: 'double abs(double a)', doc: 'Returns the absolute value of a double value.' },
-            { label: 'max', detail: 'double max(double a, double b)', doc: 'Returns the greater of two double values.' },
-            { label: 'min', detail: 'double min(double a, double b)', doc: 'Returns the smaller of two double values.' },
-            { label: 'sqrt', detail: 'double sqrt(double a)', doc: 'Returns the correctly rounded positive square root of a double value.' },
-            { label: 'random', detail: 'double random()', doc: 'Returns a double value with a positive sign, greater than or equal to 0.0 and less than 1.0.' },
-            { label: 'pow', detail: 'double pow(double a, double b)', doc: 'Returns the value of the first argument raised to the power of the second argument.' }
-        ],
-        'List': [
-            { label: 'add', detail: 'boolean add(E e)', doc: 'Appends the specified element to the end of this list.' },
-            { label: 'get', detail: 'E get(int index)', doc: 'Returns the element at the specified position in this list.' },
-            { label: 'remove', detail: 'E remove(int index)', doc: 'Removes the element at the specified position in this list.' },
-            { label: 'size', detail: 'int size()', doc: 'Returns the number of elements in this list.' },
-            { label: 'clear', detail: 'void clear()', doc: 'Removes all of the elements from this list.' },
-            { label: 'isEmpty', detail: 'boolean isEmpty()', doc: 'Returns true if this list contains no elements.' }
-        ],
-        'ArrayList': [
-            { label: 'add', detail: 'boolean add(E e)', doc: 'Appends the specified element to the end of this list.' },
-            { label: 'get', detail: 'E get(int index)', doc: 'Returns the element at the specified position in this list.' },
-            { label: 'size', detail: 'int size()', doc: 'Returns the number of elements in this list.' },
-            { label: 'toArray', detail: 'Object[] toArray()', doc: 'Returns an array containing all of the elements in this list.' }
-        ],
-        'Map': [
-            { label: 'put', detail: 'V put(K key, V value)', doc: 'Associates the specified value with the specified key in this map.' },
-            { label: 'get', detail: 'V get(Object key)', doc: 'Returns the value to which the specified key is mapped.' },
-            { label: 'containsKey', detail: 'boolean containsKey(Object key)', doc: 'Returns true if this map contains a mapping for the specified key.' },
-            { label: 'keySet', detail: 'Set<K> keySet()', doc: 'Returns a Set view of the keys contained in this map.' }
+            { label: 'toLowerCase', detail: 'String toLowerCase()', doc: 'Converts to lower case.' },
+            { label: 'toUpperCase', detail: 'String toUpperCase()', doc: 'Converts to upper case.' },
+            { label: 'trim', detail: 'String trim()', doc: 'Removes leading and trailing space.' },
+            { label: 'split', detail: 'String[] split(String regex)', doc: 'Splits this string around matches of the regex.' },
+            { label: 'contains', detail: 'boolean contains(CharSequence s)', doc: 'True if string contains the sequence.' },
+            { label: 'isEmpty', detail: 'boolean isEmpty()', doc: 'True if length is 0.' }
         ],
         'Scanner': [
-            { label: 'next', detail: 'String next()', doc: 'Finds and returns the next complete token from this scanner.' },
-            { label: 'nextLine', detail: 'String nextLine()', doc: 'Advances this scanner past the current line and returns the input that was skipped.' },
-            { label: 'nextInt', detail: 'int nextInt()', doc: 'Scans the next token of the input as an int.' },
-            { label: 'nextDouble', detail: 'double nextDouble()', doc: 'Scans the next token of the input as a double.' },
-            { label: 'hasNext', detail: 'boolean hasNext()', doc: 'Returns true if this scanner has another token in its input.' }
+            { label: 'next', detail: 'String next()', doc: 'Finds and returns the next complete token.' },
+            { label: 'nextLine', detail: 'String nextLine()', doc: 'Advances this scanner past the current line.' },
+            { label: 'nextInt', detail: 'int nextInt()', doc: 'Scans the next token as an int.' },
+            { label: 'nextDouble', detail: 'double nextDouble()', doc: 'Scans the next token as a double.' },
+            { label: 'hasNext', detail: 'boolean hasNext()', doc: 'True if scanner has another token.' }
+        ],
+        'Math': [
+            { label: 'abs', detail: 'static double abs(double a)', doc: 'Returns the absolute value.' },
+            { label: 'max', detail: 'static double max(double a, double b)', doc: 'Returns the greater of two values.' },
+            { label: 'min', detail: 'static double min(double a, double b)', doc: 'Returns the smaller of two values.' },
+            { label: 'sqrt', detail: 'static double sqrt(double a)', doc: 'Returns the square root.' },
+            { label: 'pow', detail: 'static double pow(double a, double b)', doc: 'Returns the value of a raised to the power of b.' },
+            { label: 'random', detail: 'static double random()', doc: 'Returns a random value [0.0, 1.0).' }
+        ],
+        'ArrayList': [
+            { label: 'add', detail: 'boolean add(E e)', doc: 'Appends the element to the end of the list.' },
+            { label: 'get', detail: 'E get(int index)', doc: 'Returns the element at the specified position.' },
+            { label: 'size', detail: 'int size()', doc: 'Returns the number of elements.' },
+            { label: 'remove', detail: 'E remove(int index)', doc: 'Removes the element at the specified position.' },
+            { label: 'clear', detail: 'void clear()', doc: 'Removes all elements.' },
+            { label: 'isEmpty', detail: 'boolean isEmpty()', doc: 'True if list contains no elements.' }
+        ],
+        'Arrays': [
+            { label: 'sort', detail: 'static void sort(T[] a)', doc: 'Sorts the specified array into ascending numerical order.' },
+            { label: 'toString', detail: 'static String toString(T[] a)', doc: 'Returns a string representation of the contents of the specified array.' },
+            { label: 'asList', detail: 'static List<T> asList(T... a)', doc: 'Returns a fixed-size list backed by the specified array.' }
+        ],
+        'Collections': [
+            { label: 'sort', detail: 'static void sort(List<T> list)', doc: 'Sorts the specified list into ascending order.' },
+            { label: 'reverse', detail: 'static void reverse(List<?> list)', doc: 'Reverses the order of the elements in the specified list.' },
+            { label: 'max', detail: 'static T max(Collection<? extends T> coll)', doc: 'Returns the maximum element of the given collection.' }
         ],
         'Integer': [
             { label: 'parseInt', detail: 'static int parseInt(String s)', doc: 'Parses the string argument as a signed decimal integer.' },
-            { label: 'valueOf', detail: 'static Integer valueOf(int i)', doc: 'Returns an Integer instance representing the specified int value.' },
             { label: 'compare', detail: 'static int compare(int x, int y)', doc: 'Compares two int values numerically.' }
         ]
     };
-    MEMBER_PROVIDERS['HashMap'] = MEMBER_PROVIDERS['Map'];
-    MEMBER_PROVIDERS['Double'] = [
-        { label: 'parseDouble', detail: 'static double parseDouble(String s)', doc: 'Returns a new double initialized to the value represented by the specified String.' },
-        { label: 'isNaN', detail: 'static boolean isNaN(double v)', doc: 'Returns true if the specified number is a Not-a-Number (NaN) value.' }
-    ];
 
+    // Helper to get symbol table and inferred types
+    const getSymbolTable = (model) => {
+        const text = model.getValue();
+        const symbols = {
+            variables: new Map(), // name -> type
+            methods: new Set(),
+            imports: new Set(),
+            package: null
+        };
+
+        // Detect package
+        const pkgMatch = text.match(/package\s+([\w\.]+);/);
+        if (pkgMatch) symbols.package = pkgMatch[1];
+
+        // Detect existing imports
+        const importMatches = text.matchAll(/import\s+([\w\.]+);/g);
+        for (const match of importMatches) {
+            symbols.imports.add(match[1]);
+        }
+
+        // Simple Type Inference Heuristics
+        // 1. Explicit declarations: Scanner sc = ... or String name;
+        const varMatches = text.matchAll(/\b([A-Z]\w*(?:<[\w\s,<>]+>)?|int|double|boolean|long|float|char|byte|short|String)\s+([a-z]\w*)\b\s*(?:=|;)/g);
+        for (const match of varMatches) {
+            symbols.variables.set(match[2], match[1].split('<')[0]); // Strip generics for lookup
+        }
+
+        // 2. Constructor inference: var = new Scanner(...)
+        const constMatches = text.matchAll(/\b([a-z]\w*)\s*=\s*new\s+([A-Z]\w*)/g);
+        for (const match of constMatches) {
+            symbols.variables.set(match[1], match[2]);
+        }
+
+        // Detect user methods
+        const methodMatches = text.matchAll(/(?:public|private|protected|static|\s) +[\w\<\>\[\]]+\s+([a-zA-Z_]\w*)\s*\(/g);
+        for (const match of methodMatches) {
+            symbols.methods.add(match[1]);
+        }
+
+        return symbols;
+    };
+
+    // Helper to calculate auto-import text edit
+    const getImportEdit = (model, symbols, className) => {
+        const fullImport = IMPORT_MAP[className];
+        if (!fullImport || symbols.imports.has(fullImport)) return null;
+
+        const text = model.getValue();
+        const importLine = `import ${fullImport};\n`;
+        
+        // Find best position to insert
+        const lines = text.split('\n');
+        let insertLine = 1;
+        let lastImportLine = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trim().startsWith('package ')) insertLine = i + 2;
+            if (lines[i].trim().startsWith('import ')) lastImportLine = i + 1;
+        }
+
+        const finalPos = lastImportLine !== -1 ? lastImportLine + 1 : insertLine;
+
+        return {
+            range: new monaco.Range(finalPos, 1, finalPos, 1),
+            text: importLine
+        };
+    };
+
+    // Snippet Provider for common shortcuts
     monaco.languages.registerCompletionItemProvider('java', {
-        triggerCharacters: ['.'],
         provideCompletionItems: (model, position) => {
-            const textUntilPosition = model.getValueInRange({
-                startLineNumber: 1,
-                startColumn: 1,
-                endLineNumber: position.lineNumber,
-                endColumn: position.column
-            });
-
             const word = model.getWordUntilPosition(position);
             const range = {
                 startLineNumber: position.lineNumber,
@@ -831,17 +1118,58 @@ const registerJavaProviders = () => {
                 endColumn: word.endColumn
             };
 
-            // Check if we are after a dot
+            return {
+                suggestions: [
+                    {
+                        label: 'syso',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        documentation: 'System.out.println();',
+                        insertText: 'System.out.println(${1});',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'main',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        documentation: 'public static void main(String[] args)',
+                        insertText: 'public static void main(String[] args) {\n\t${1}\n}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        range: range
+                    }
+                ]
+            };
+        }
+    });
+
+    monaco.languages.registerCompletionItemProvider('java', {
+        triggerCharacters: ['.'],
+        provideCompletionItems: (model, position) => {
+            const symbols = getSymbolTable(model);
+            const word = model.getWordUntilPosition(position);
             const lineContent = model.getLineContent(position.lineNumber);
             const charBefore = lineContent[position.column - 2];
+            
+            const range = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn
+            };
 
+            // CASE: Member access (dot triggered)
             if (charBefore === '.') {
-                const match = lineContent.substring(0, position.column - 1).match(/([a-zA-Z0-9_.]+)\.$/);
+                const fullLineUntilDot = lineContent.substring(0, position.column - 1);
+                const match = fullLineUntilDot.match(/([a-zA-Z0-9_"]+)\.$/);
+                
                 if (match) {
-                    const objectName = match[1];
-                    // Try to find methods for this object/class
-                    const members = MEMBER_PROVIDERS[objectName] || MEMBER_PROVIDERS['String']; // Default to String for common cases
+                    let objectName = match[1];
+                    let type = null;
+
+                    // Support for literals: "text".
+                    if (objectName.startsWith('"')) type = 'String';
+                    else type = symbols.variables.get(objectName) || objectName;
                     
+                    const members = MEMBER_PROVIDERS[type] || MEMBER_PROVIDERS['String'];
                     return {
                         suggestions: members.map(m => ({
                             label: m.label,
@@ -856,20 +1184,124 @@ const registerJavaProviders = () => {
                 }
             }
 
-            // Standard completions (Keywords, etc.)
-            const text = model.getValue();
-            const userMethods = [...text.matchAll(/(?:public|private|protected|static|\s) +[\w\<\>\[\]]+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g)].map(m => m[1]);
-            const userVariables = [...text.matchAll(/\b[\w\<\>\[\]]+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;)/g)].map(m => m[1]);
+            // CASE: Standard completions & Auto-imports
+            const suggestions = [
+                // Keywords
+                ...keywords.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range })),
+                
+                // User defined symbols
+                ...Array.from(symbols.methods).map(m => ({ label: m, kind: monaco.languages.CompletionItemKind.Method, insertText: m + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Método definido por usuario' })),
+                ...Array.from(symbols.variables.keys()).map(v => ({ label: v, kind: monaco.languages.CompletionItemKind.Variable, insertText: v, range, detail: `Variable (${symbols.variables.get(v)})` })),
 
-            return {
-                suggestions: [
-                    ...keywords.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range })),
-                    ...userMethods.map(m => ({ label: m, kind: monaco.languages.CompletionItemKind.Method, insertText: m + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range, detail: 'User method' })),
-                    ...userVariables.map(v => ({ label: v, kind: monaco.languages.CompletionItemKind.Variable, insertText: v, range: range, detail: 'User variable' })),
-                    { label: 'sysout', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'System.out.println(${1});', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range, detail: 'Eclipse shortcut' },
-                    { label: 'main', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'public static void main(String[] args) {\n\t${1}\n}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range }
-                ]
+                // Snippets
+                { label: 'main', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'public static void main(String[] args) {\n\t${1}\n}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Main method' },
+                { label: 'sout', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'System.out.println(${1});', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'System.out.println' },
+                { label: 'fori', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for (int i = 0; i < ${1:10}; i++) {\n\t${2}\n}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'For loop' },
+                { label: 'trycatch', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'try {\n\t${1}\n} catch (Exception e) {\n\t${2:e.printStackTrace();}\n}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Try-catch block' },
+
+                // Classes with Auto-Import
+                ...Object.keys(IMPORT_MAP).map(className => {
+                    const edit = getImportEdit(model, symbols, className);
+                    return {
+                        label: className,
+                        kind: monaco.languages.CompletionItemKind.Class,
+                        insertText: className,
+                        range,
+                        detail: `Class ${IMPORT_MAP[className]}`,
+                        additionalTextEdits: edit ? [edit] : []
+                    };
+                })
+            ];
+
+            return { suggestions };
+        }
+    });
+};
+
+const registerLuaProviders = () => {
+    if (window.luaProvidersRegistered) return;
+    window.luaProvidersRegistered = true;
+
+    const keywords = ['and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until', 'while'];
+    const builtins = ['print', 'type', 'pairs', 'ipairs', 'tostring', 'tonumber', 'assert', 'error', 'pcall', 'select', 'next'];
+    
+    const MEMBER_PROVIDERS = {
+        'table': [
+            { label: 'insert', detail: 'table.insert(list, [pos,] value)', doc: 'Inserts element value at position pos in list.' },
+            { label: 'remove', detail: 'table.remove(list [, pos])', doc: 'Removes from list the element at position pos.' },
+            { label: 'sort', detail: 'table.sort(list [, comp])', doc: 'Sorts list elements in a given order.' },
+            { label: 'concat', detail: 'table.concat(list [, sep [, i [, j]]])', doc: 'Returns the concatenation of the elements of list.' }
+        ],
+        'math': [
+            { label: 'abs', detail: 'math.abs(x)', doc: 'Returns the absolute value of x.' },
+            { label: 'floor', detail: 'math.floor(x)', doc: 'Returns the largest integer smaller than or equal to x.' },
+            { label: 'ceil', detail: 'math.ceil(x)', doc: 'Returns the smallest integer larger than or equal to x.' },
+            { label: 'max', detail: 'math.max(x, ...)', doc: 'Returns the argument with the maximum value.' },
+            { label: 'min', detail: 'math.min(x, ...)', doc: 'Returns the argument with the minimum value.' },
+            { label: 'sqrt', detail: 'math.sqrt(x)', doc: 'Returns the square root of x.' },
+            { label: 'random', detail: 'math.random([m [, n]])', doc: 'Returns a pseudo-random float or integer.' }
+        ],
+        'string': [
+            { label: 'sub', detail: 'string.sub(s, i [, j])', doc: 'Returns the substring of s that starts at i and continues until j.' },
+            { label: 'upper', detail: 'string.upper(s)', doc: 'Returns a copy of this string with all lowercase letters changed to uppercase.' },
+            { label: 'lower', detail: 'string.lower(s)', doc: 'Returns a copy of this string with all uppercase letters changed to lowercase.' },
+            { label: 'len', detail: 'string.len(s)', doc: 'Returns its length.' },
+            { label: 'find', detail: 'string.find(s, pattern [, init [, plain]])', doc: 'Looks for the first match of pattern in the string s.' }
+        ]
+    };
+
+    monaco.languages.registerCompletionItemProvider('lua', {
+        triggerCharacters: ['.'],
+        provideCompletionItems: (model, position) => {
+            const word = model.getWordUntilPosition(position);
+            const lineContent = model.getLineContent(position.lineNumber);
+            const charBefore = lineContent[position.column - 2];
+            
+            const range = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn
             };
+
+            if (charBefore === '.') {
+                const match = lineContent.substring(0, position.column - 1).match(/([a-zA-Z0-9_]+)\.$/);
+                if (match) {
+                    const objectName = match[1];
+                    const members = MEMBER_PROVIDERS[objectName];
+                    if (members) {
+                        return {
+                            suggestions: members.map(m => ({
+                                label: m.label,
+                                kind: monaco.languages.CompletionItemKind.Method,
+                                insertText: m.label + '(${1})',
+                                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                                range: range,
+                                detail: m.detail,
+                                documentation: m.doc
+                            }))
+                        };
+                    }
+                }
+            }
+
+            const text = model.getValue();
+            const userFunctions = [...text.matchAll(/function\s+([a-zA-Z_][a-zA-Z0-9_]*)/g)].map(m => m[1]);
+            const userVariables = [...text.matchAll(/\b(local\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g)].map(m => m[2]);
+
+            const suggestions = [
+                ...keywords.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range })),
+                ...builtins.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Built-in function' })),
+                ...userFunctions.map(f => ({ label: f, kind: monaco.languages.CompletionItemKind.Function, insertText: f + '(${1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'User function' })),
+                ...[...new Set(userVariables)].map(v => ({ label: v, kind: monaco.languages.CompletionItemKind.Variable, insertText: v, range, detail: 'User variable' })),
+                
+                // Snippets
+                { label: 'fori', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for i = 1, ${1:10} do\n\t${2}\nend', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Numeric for loop' },
+                { label: 'forp', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for k, v in pairs(${1:table}) do\n\t${2}\nend', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Pairs loop' },
+                { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition} then\n\t${2}\nend', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'If block' }
+            ];
+
+            return { suggestions };
         }
     });
 };
