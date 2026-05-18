@@ -19,10 +19,11 @@ const DEFAULT_USER = {
 export const api = {
     getUser: async () => {
         const storedUser = localStorage.getItem('user');
+        console.log('[API] User:', storedUser);
         if (storedUser) {
             const user = JSON.parse(storedUser);
             // Ensure stats and id exist
-            if (!user.id) user.id = 25; // ID por defecto de la doc
+            if (!user.id) user.id = JSON.parse(storedUser).id; // ID por defecto de la doc
             if (!user.stats) user.stats = DEFAULT_USER.stats;
             return user;
         }
@@ -70,11 +71,14 @@ export const api = {
 
         try {
             // Fetch stats and sessions in parallel
+            console.log("[API] Fetching dashboard data for user:", user.id);
             const [sessions, exerciseStats, userProgress] = await Promise.all([
                 api.getSessions(user.id),
                 fetch(`${BASE_URL}/api/user_ejer/stats?user_id=${user.id}`).then(res => res.json()),
                 fetch(`${BASE_URL}/api/progreso_usuario?usuario_id=eq.${user.id}&order=updated_at.desc&limit=1`).then(res => res.json())
             ]);
+
+            console.log("[API] Sessions Received:", sessions);
 
             console.log('[API] Dashboard Stats Received:', { exerciseStats });
 
@@ -84,7 +88,7 @@ export const api = {
             if (exerciseStats) {
                 // Handle both single object or array response
                 const statsObj = Array.isArray(exerciseStats) ? exerciseStats[0] : exerciseStats;
-                exercisesDone = statsObj.cantidad_ejercicios || statsObj.total_completados || statsObj.count || 0;
+                exercisesDone = statsObj?.cantidad_ejercicios || statsObj?.total_completados || statsObj?.count || 0;
             }
 
             const stats = {
@@ -93,7 +97,7 @@ export const api = {
                 level: user.nivel || "Principiante"
             };
 
-            let currentGoal = userProgress[0] || null;
+            let currentGoal = Array.isArray(userProgress) ? (userProgress[0] || null) : (userProgress || null);
             if (currentGoal && currentGoal.topic_id) {
                 try {
                     const topic = await fetch(`${BASE_URL}/api/topics/${currentGoal.topic_id}`).then(res => res.json());
