@@ -4,17 +4,17 @@
   "description": "Unified DeepTutor - React + Express + PostgreSQL",
   "private": true,
   "scripts": {
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "build:client": "cd client && npm run build",
-    "server": "cd server && npm start",
-    "server:dev": "cd server && npm run dev",
-    "client": "cd client && npm run dev",
+    "install:all": "pnpm install",
+    "build:client": "pnpm --filter client build",
+    "server": "pnpm --filter server start",
+    "server:dev": "pnpm --filter server dev",
+    "client": "pnpm --filter client dev",
     "admin": "node admin/server.js",
-    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run server:dev\" \"npm run client\"",
-    "dev:all": "concurrently -n \"SERVER,CLIENT,ADMIN\" -c \"magenta,cyan,yellow\" \"npm run server:dev\" \"npm run client\" \"npm run admin\"",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"pnpm run server:dev\" \"pnpm run client\"",
+    "dev:all": "concurrently -n \"SERVER,CLIENT,ADMIN\" -c \"magenta,cyan,yellow\" \"pnpm run server:dev\" \"pnpm run client\" \"pnpm run admin\"",
     "avatar": "xdg-open http://localhost:5002/avatar/avatar-3d-voz.html",
-    "start": "npm run build:client && npm run server",
-    "all": "npm run install:all && npm run build:client && npm run server && npm run admin"
+    "start": "pnpm run build:client && pnpm run server",
+    "all": "pnpm run install:all && pnpm run build:client && pnpm run server && pnpm run admin"
   },
   "dependencies": {},
   "devDependencies": {
