@@ -492,6 +492,7 @@ window.initEditor = (exercise) => {
                 let resultsHTML = '<div class="flex flex-col gap-4">';
 
                 try {
+                    let submissionExceptionStderr = null;
                     for (let i = 0; i < testCases.length; i++) {
                         const tc = testCases[i];
                         const input = tc.Entrada || tc.input || '';
@@ -506,9 +507,14 @@ window.initEditor = (exercise) => {
 
                         if (isCorrect) {
                             passedCount++;
-                        } else if (!lastError) {
-                            // Capturamos el primer error para el botón de ayuda
-                            lastError = result.stderr ? cleanTraceback(result.stderr) : `Salida incorrecta en Caso ${i+1}. Esperado: "${expectedOutput}", Obtenido: "${actualOutput}"`;
+                        } else {
+                            if (!lastError) {
+                                // Capturamos el primer error para el botón de ayuda
+                                lastError = result.stderr ? cleanTraceback(result.stderr) : `Salida incorrecta en Caso ${i+1}. Esperado: "${expectedOutput}", Obtenido: "${actualOutput}"`;
+                            }
+                            if ((result.exit_code !== 0 || result.stderr) && !submissionExceptionStderr) {
+                                submissionExceptionStderr = result.stderr;
+                            }
                         }
 
                         resultsHTML += `
@@ -568,6 +574,16 @@ window.initEditor = (exercise) => {
                         // Si todo está correcto, actualizamos el score global del tema
                         if (allPassed && exercise.topic_id) {
                             await api.updateUserTopicProgress(user.id, exercise.topic_id);
+                        }
+
+                        // Si hubo alguna excepción durante la ejecución de los casos de prueba, la registramos una única vez
+                        if (submissionExceptionStderr) {
+                            try {
+                                console.log('[EDITOR] Recording submission exception to DB...');
+                                await api.recordException(submissionExceptionStderr, language, user.id);
+                            } catch (err) {
+                                console.error('[EDITOR] Error recording submission exception:', err);
+                            }
                         }
                     }
 

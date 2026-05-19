@@ -4,6 +4,22 @@ import './ui.js';
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DeepTutor SPA Initialized');
     
+    // Set user avatar if picture is available
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+        try {
+            const user = JSON.parse(storedUser);
+            if (user && user.picture) {
+                const avatarDiv = document.getElementById('user-avatar');
+                if (avatarDiv) {
+                    avatarDiv.innerHTML = `<img src="${user.picture}" alt="${user.name || user.nombre || 'Usuario'}" class="w-full h-full object-cover">`;
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+        }
+    }
+    
     // Bind sidebar clicks
     document.querySelectorAll('[data-route]').forEach(link => {
         link.addEventListener('click', (e) => {

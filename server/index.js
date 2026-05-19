@@ -455,6 +455,124 @@ app.patch('/api/progreso_usuario', async (req, res) => {
   }
 });
 
+// --- User Errors & Detected Errors ---
+app.get('/api/user_errors', async (req, res) => {
+  try {
+    const queryString = new URLSearchParams(req.query).toString();
+    const endpoint = queryString ? `/user_errors?${queryString}` : '/user_errors';
+    const errors = await db.request(endpoint);
+    res.json(errors || []);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener errores de usuario:', error.message);
+    res.status(500).json({ error: 'Error al obtener errores de usuario' });
+  }
+});
+
+app.get('/api/errores_detectados', async (req, res) => {
+  try {
+    const queryString = new URLSearchParams(req.query).toString();
+    const endpoint = queryString ? `/errores_detectados?${queryString}` : '/errores_detectados';
+    const errors = await db.request(endpoint);
+    res.json(errors || []);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener catálogo de errores:', error.message);
+    res.status(500).json({ error: 'Error al obtener catálogo de errores' });
+  }
+});
+
+
+function parseException(stderr, language) {
+  if (!stderr || typeof stderr !== 'string') {
+    return { nombre: 'UnknownError', tipo: language || 'unknown', descripcion: 'Unknown execution error' };
+  }
+
+  const lines = stderr.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    return { nombre: 'UnknownError', tipo: language || 'unknown', descripcion: 'Unknown empty error' };
+  }
+
+  let nombre = 'RuntimeError';
+  let descripcion = stderr;
+  let tipo = language || 'unknown';
+
+  if (language === 'python') {
+    // Look from bottom to top for a line matching ExceptionClass: message
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      const match = line.match(/^([a-zA-Z_]\w*):\s*(.*)$/);
+      if (match && !line.startsWith('Traceback') && !line.startsWith('File ') && !line.startsWith('at ')) {
+        nombre = match[1];
+        descripcion = match[2];
+        break;
+      }
+    }
+  } else if (language === 'java') {
+    let foundException = false;
+    for (const line of lines) {
+      const match = line.match(/Exception in thread ".*" ([a-zA-Z0-9_\.]+):\s*(.*)$/);
+      if (match) {
+        const fullClassName = match[1];
+        const parts = fullClassName.split('.');
+        nombre = parts[parts.length - 1];
+        descripcion = match[2];
+        foundException = true;
+        break;
+      }
+    }
+    if (!foundException) {
+      // Check for compiler error: e.g. "Main.java:3: error: ';' expected"
+      for (const line of lines) {
+        const match = line.match(/:\s*error:\s*(.*)$/);
+        if (match) {
+          nombre = 'JavaCompilerError';
+          descripcion = match[1];
+          foundException = true;
+          break;
+        }
+      }
+    }
+    if (!foundException) {
+      nombre = 'JavaError';
+      descripcion = lines[0] || 'Unknown Java Error';
+    }
+  } else if (language === 'lua') {
+    let foundError = false;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      const match = line.match(/(?:lua:\s+)?script\.lua:\d+:\s*(.*)$/i);
+      if (match) {
+        nombre = 'LuaRuntimeError';
+        descripcion = match[1];
+        foundError = true;
+        break;
+      }
+    }
+    if (!foundError) {
+      nombre = 'LuaError';
+      descripcion = lines[0] || 'Unknown Lua Error';
+    }
+  }
+
+  if (nombre.length > 100) {
+    nombre = nombre.substring(0, 100);
+  }
+
+  return { nombre, tipo, descripcion };
+}
+
+async function safeDbRequest(endpoint, method, payload) {
+  try {
+    const result = await db.request(endpoint, method, payload);
+    return Array.isArray(result) ? result[0] : result;
+  } catch (error) {
+    if (error.message && error.message.includes('"error": "0"')) {
+      console.log(`[SERVER] Safe DB Request: ignoring Flask "error 0" on ${method} ${endpoint}`);
+      return { success: true, error_zero: true };
+    }
+    throw error;
+  }
+}
+
 // --- Code Execution ---
 app.post('/api/execute', async (req, res) => {
   const { code, language, input } = req.body;
@@ -470,6 +588,72 @@ app.post('/api/execute', async (req, res) => {
   } catch (error) {
     console.error('[SERVER] Error al ejecutar código:', error.message);
     res.status(500).json({ error: 'Error al ejecutar código', details: error.message });
+  }
+});
+
+// --- Record Exception ---
+app.post('/api/record_exception', async (req, res) => {
+  const { stderr, language, userId } = req.body;
+  console.log(`[SERVER] Petición de registro de excepción recibida (${language}) - User: ${userId}`);
+
+  if (!stderr || !language || !userId) {
+    return res.status(400).json({ error: 'stderr, language y userId son requeridos' });
+  }
+
+  try {
+    const parsed = parseException(stderr, language);
+    console.log(`[SERVER] Parsed exception for recording: ${parsed.nombre} (${parsed.tipo})`);
+
+    // 1. Get or create the error in errores_detectados
+    let errorId;
+    const existingErrors = await db.request(`/errores_detectados?nombre=eq.${encodeURIComponent(parsed.nombre)}&tipo=eq.${encodeURIComponent(parsed.tipo)}`);
+    
+    if (Array.isArray(existingErrors) && existingErrors.length > 0) {
+      errorId = existingErrors[0].id;
+    } else {
+      const newError = await safeDbRequest('/errores_detectados', 'POST', {
+        nombre: parsed.nombre,
+        tipo: parsed.tipo,
+        descripcion: parsed.descripcion
+      });
+      errorId = newError?.id;
+      
+      if (!errorId) {
+        const checkAgain = await db.request(`/errores_detectados?nombre=eq.${encodeURIComponent(parsed.nombre)}&tipo=eq.${encodeURIComponent(parsed.tipo)}`);
+        if (Array.isArray(checkAgain) && checkAgain.length > 0) {
+          errorId = checkAgain[0].id;
+        }
+      }
+    }
+
+    // 2. Insert or update the user_errors counter
+    if (errorId) {
+      const existingUserErrors = await db.request(`/user_errors?usuario_id=eq.${userId}&error_id=eq.${errorId}`);
+      if (Array.isArray(existingUserErrors) && existingUserErrors.length > 0) {
+        const userError = existingUserErrors[0];
+        await safeDbRequest(`/user_errors/${userError.id}`, 'PUT', {
+          usuario_id: userId,
+          error_id: errorId,
+          contador: (userError.contador || 0) + 1,
+          last_seen: new Date().toISOString()
+        });
+      } else {
+        await safeDbRequest('/user_errors', 'POST', {
+          usuario_id: userId,
+          error_id: errorId,
+          contador: 1,
+          last_seen: new Date().toISOString()
+        });
+      }
+      console.log(`[SERVER] Error successfully logged in DB for user ${userId}, error ${errorId}`);
+      res.json({ success: true, errorId });
+    } else {
+      console.error('[SERVER] Failed to retrieve errorId for exception:', parsed.nombre);
+      res.status(500).json({ error: 'No se pudo obtener o crear el ID del error' });
+    }
+  } catch (error) {
+    console.error('[SERVER] Error recording exception:', error.message);
+    res.status(500).json({ error: 'Error al registrar la excepción', details: error.message });
   }
 });
 
