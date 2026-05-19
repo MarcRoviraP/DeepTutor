@@ -256,6 +256,16 @@ export const api = {
         }
     },
     
+    getTopics: async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/topics`);
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Error fetching topics:', error);
+            return [];
+        }
+    },
+    
     getConversations: async (usuario_id) => {
         try {
             const response = await fetch(`${BASE_URL}/api/conversations?usuario_id=${usuario_id}`);

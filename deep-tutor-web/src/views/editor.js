@@ -8,9 +8,14 @@ export const Editor = (data) => {
 
     // Parsear ejemplos si existen
     let examplesHTML = '';
+    let firstExampleInput = '';
     if (exercise && exercise.examples) {
         try {
             const examples = typeof exercise.examples === 'string' ? JSON.parse(exercise.examples) : exercise.examples;
+            if (Array.isArray(examples) && examples.length > 0) {
+                const firstEx = examples[0];
+                firstExampleInput = firstEx.Entrada || firstEx.input || '';
+            }
             examplesHTML = `
                 <div class="mt-8 flex flex-col gap-4">
                     <h4 class="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest">
@@ -194,7 +199,7 @@ export const Editor = (data) => {
                         </div>
                         <textarea id="stdin-input" 
                             class="flex-1 bg-transparent p-4 font-mono text-xs text-on-surface focus:outline-none resize-none placeholder:text-outline-variant/30" 
-                            placeholder="Ej: 10\nHola Mundo\n..."></textarea>
+                            placeholder="Ej: 10\nHola Mundo\n...">${firstExampleInput}</textarea>
                     </div>
 
                     <!-- Console Panel -->

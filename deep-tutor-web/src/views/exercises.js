@@ -8,9 +8,29 @@ export const Exercises = (data) => {
 
     const levels = ["Principiante", "Elemental", "Intermedio", "Avanzado", "Experto"];
 
-    // Group exercises by difficulty
-    const grouped = levels.reduce((acc, level) => {
-        acc[level] = exercises.filter(ex => ex.difficulty === level);
+    const topics = data.topics || [];
+    const topicMap = topics.reduce((acc, t) => {
+        acc[t.id] = t.nombre;
+        return acc;
+    }, {});
+
+    // Group exercises by difficulty and then sub-group by topic
+    const groupedByLevelAndTopic = levels.reduce((acc, level) => {
+        const levelExercises = exercises.filter(ex => ex.difficulty === level);
+        if (levelExercises.length > 0) {
+            const topicGroups = levelExercises.reduce((tAcc, ex) => {
+                const topicId = ex.topic_id || 'unassigned';
+                const topicName = topicMap[topicId] || 'Otros Temas';
+                if (!tAcc[topicName]) {
+                    tAcc[topicName] = [];
+                }
+                tAcc[topicName].push(ex);
+                return tAcc;
+            }, {});
+            acc[level] = topicGroups;
+        } else {
+            acc[level] = {};
+        }
         return acc;
     }, {});
 
@@ -25,7 +45,6 @@ export const Exercises = (data) => {
         // Define colors and icons based on status
         let statusColorClass = 'text-primary';
         let statusIcon = 'terminal';
-        let statusText = ex.difficulty;
         let cardBorderClass = 'border-outline-variant';
         
         if (estado === 1) {
@@ -73,18 +92,31 @@ export const Exercises = (data) => {
                 <p class="text-on-surface-variant text-sm">Por favor, vuelve más tarde o contacta con tu instructor.</p>
             </div>
         ` : levels.map(level => {
-            const levelExercises = grouped[level];
-            if (levelExercises.length === 0) return '';
+            const levelGroups = groupedByLevelAndTopic[level];
+            if (Object.keys(levelGroups).length === 0) return '';
+
+            const totalCount = Object.values(levelGroups).reduce((sum, list) => sum + list.length, 0);
 
             return `
             <section class="flex flex-col gap-6">
                 <div class="flex items-center gap-4">
-                    <h3 class="text-2xl font-bold text-primary">${level}</h3>
+                    <h3 class="text-2xl font-black text-primary">${level}</h3>
                     <div class="h-[1px] flex-grow bg-outline-variant opacity-30"></div>
-                    <span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">${levelExercises.length} Ejercicios</span>
+                    <span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">${totalCount} Ejercicios</span>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${levelExercises.map(renderExerciseCard).join('')}
+                <div class="flex flex-col gap-8 pl-4 border-l border-outline-variant/20 ml-2">
+                    ${Object.entries(levelGroups).map(([topicName, topicExercises]) => `
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-sm text-outline-variant">folder_open</span>
+                                <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-[0.15em] opacity-80">${topicName}</h4>
+                                <span class="text-[10px] px-2 py-0.5 bg-surface-container-highest rounded text-outline font-bold">${topicExercises.length}</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                ${topicExercises.map(renderExerciseCard).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </section>
             `;

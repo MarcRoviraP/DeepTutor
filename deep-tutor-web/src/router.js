@@ -80,13 +80,16 @@ class Router {
     async renderExercises() {
         console.log('[ROUTER] Rendering exercises view...');
         const user = await api.getUser();
-        const exercises = await api.getExercises();
+        const [exercises, topics] = await Promise.all([
+            api.getExercises(),
+            api.getTopics()
+        ]);
         let progress = [];
         if (user && user.id) {
             progress = await api.getExerciseProgress(user.id);
         }
-        console.log(`[ROUTER] Loaded ${exercises.length} exercises and ${progress.length} progress records. Updating container.`);
-        this.container.innerHTML = Exercises({ exercises, progress });
+        console.log(`[ROUTER] Loaded ${exercises.length} exercises, ${topics.length} topics and ${progress.length} progress records. Updating container.`);
+        this.container.innerHTML = Exercises({ exercises, progress, topics });
     }
 
     async renderEditor(params) {
