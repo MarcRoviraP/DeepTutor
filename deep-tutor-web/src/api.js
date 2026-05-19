@@ -53,6 +53,7 @@ export const api = {
                     date: new Date(e.envio_send_time).toLocaleDateString(),
                     duration: e.estado === 1 ? "Completado" : "Pendiente",
                     type: "exercise",
+                    ejer_id: e.ejer_id,
                     timestamp: new Date(e.envio_send_time).getTime()
                 }))
             ];

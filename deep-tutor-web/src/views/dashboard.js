@@ -57,8 +57,12 @@ export const Dashboard = (data) => {
                 </div>
                 
                 <div class="bg-surface-container/20 border border-outline-variant rounded-2xl overflow-hidden backdrop-blur-sm">
-                    ${sessions.length > 0 ? sessions.map((session, index) => `
-                        <div class="group flex items-center justify-between p-5 ${index !== sessions.length - 1 ? 'border-b border-outline-variant/30' : ''} hover:bg-primary/5 transition-all cursor-pointer">
+                    ${sessions.length > 0 ? sessions.map((session, index) => {
+                        const clickHandler = session.type === 'exercise'
+                            ? `window.router.navigate('editor', { id: '${session.ejer_id || ''}' })`
+                            : `window.router.navigate('chat', { id: '${session.id || ''}' })`;
+                        return `
+                        <div onclick="${clickHandler}" class="group flex items-center justify-between p-5 ${index !== sessions.length - 1 ? 'border-b border-outline-variant/30' : ''} hover:bg-primary/5 transition-all cursor-pointer">
                             <div class="flex items-center gap-5">
                                 <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                     <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">${session.type === 'exercise' ? 'terminal' : 'forum'}</span>
@@ -70,7 +74,8 @@ export const Dashboard = (data) => {
                             </div>
                             <span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
                         </div>
-                    `).join('') : `
+                        `;
+                    }).join('') : `
                         <div class="p-12 text-center flex flex-col items-center gap-4">
                             <span class="material-symbols-outlined !text-6xl text-outline-variant">inbox</span>
                             <p class="text-on-surface-variant italic">No hay actividad reciente. ¡Empezá hoy mismo!</p>
