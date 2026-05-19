@@ -363,6 +363,19 @@ app.get('/api/user_ejer/stats', async (req, res) => {
   }
 });
 
+app.get('/api/exercises/stats', async (req, res) => {
+  try {
+    const queryString = new URLSearchParams(req.query).toString();
+    const endpoint = queryString ? `/ejercicios/stats?${queryString}` : '/ejercicios/stats';
+    const stats = await db.request(endpoint);
+    res.json(stats || []);
+  } catch (error) {
+    console.error('[SERVER] Error al obtener estadísticas de ejercicios:', error.message);
+    res.status(500).json({ error: 'Error al obtener estadísticas de ejercicios' });
+  }
+});
+
+
 app.post('/api/user_ejer', async (req, res) => {
   try {
     const { user_id, ejer_id, envio, estado } = req.body;

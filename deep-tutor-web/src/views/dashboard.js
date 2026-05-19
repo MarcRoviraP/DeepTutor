@@ -106,8 +106,8 @@ export const Dashboard = (data) => {
                         </div>
                     </div>
 
-                    <button onclick="window.location.hash='#/chat'" class="w-full bg-primary text-on-primary py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:shadow-lg hover:shadow-primary/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300">
-                        ${currentGoal ? 'Reanudar Módulo' : 'Ir al Mentor'}
+                    <button onclick="${currentGoal ? (currentGoal.next_exercise_id ? "router.navigate('editor', { id: '" + currentGoal.next_exercise_id + "' })" : "router.navigate('exercises')") : "window.location.hash='#/chat'"}" class="w-full bg-primary text-on-primary py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:shadow-lg hover:shadow-primary/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300">
+                        ${currentGoal ? 'Ir al siguiente ejercicio' : 'Ir al Mentor'}
                     </button>
                 </div>
                 

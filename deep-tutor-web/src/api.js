@@ -105,6 +105,45 @@ export const api = {
                 } catch (e) {
                     currentGoal.topic_name = "Continuar aprendizaje";
                 }
+
+                try {
+                    // Fetch total exercises count in the current topic via API stats
+                    const statsResponse = await fetch(`${BASE_URL}/api/exercises/stats?topic_id=eq.${currentGoal.topic_id}`).then(res => res.json());
+                    const statsObj = Array.isArray(statsResponse) ? statsResponse[0] : statsResponse;
+                    const totalExercises = statsObj?.cantidad_ejercicios || 0;
+
+                    // Fetch all exercises and progress records to calculate dynamic percentage
+                    const [exercises, progressRecords] = await Promise.all([
+                        api.getExercises(),
+                        api.getExerciseProgress(user.id)
+                    ]);
+                    
+                    const exercisesInTopic = exercises.filter(ex => ex.topic_id === currentGoal.topic_id);
+                    const completedInTopic = progressRecords.filter(p => {
+                        const exercise = exercisesInTopic.find(ex => ex.id == p.ejer_id);
+                        return exercise && p.estado === 2; // 2: completed (exitoso)
+                    }).length;
+
+                    // Find first exercise in this topic that is not completed (estado !== 2)
+                    const nextUncompletedExercise = exercisesInTopic.find(ex => {
+                        const prog = progressRecords.find(p => p.ejer_id == ex.id);
+                        return !prog || prog.estado !== 2;
+                    });
+                    if (nextUncompletedExercise) {
+                        currentGoal.next_exercise_id = nextUncompletedExercise.id;
+                    }
+
+                    if (totalExercises > 0) {
+                        currentGoal.score = Math.round((completedInTopic / totalExercises) * 100);
+                    } else if (exercisesInTopic.length > 0) {
+                        currentGoal.score = Math.round((completedInTopic / exercisesInTopic.length) * 100);
+                    } else {
+                        currentGoal.score = 0;
+                    }
+                    console.log(`[API] Dynamic progress for topic ${currentGoal.topic_id}: completed=${completedInTopic}, total=${totalExercises}, score=${currentGoal.score}%`);
+                } catch (err) {
+                    console.error('[API] Error calculating dynamic topic progress:', err);
+                }
             }
 
             return {
