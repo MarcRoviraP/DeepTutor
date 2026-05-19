@@ -107,10 +107,10 @@ module.exports = {
         java: 'Main.java'
     };
     const fileName = extensions[language] || 'script.txt';
-    
     const blob = new Blob([code], { type: 'text/plain' });
+    const cleanInput = typeof input === 'string' ? input.replace(/\r/g, '') : '';
     formData.append('file', blob, fileName);
-    formData.append('input', input);
+    formData.append('input', cleanInput);
 
     const options = {
       method: 'POST',

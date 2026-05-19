@@ -392,11 +392,15 @@ export const api = {
     },
     executeCode: async (code, language, input = '') => {
         try {
+            const cleanInput = typeof input === 'string' ? input.replace(/\r/g, '') : '';
+            const payload = { code, language, input: cleanInput };
+            const curlCommand = `curl -X POST "${BASE_URL}/api/execute" -H "Content-Type: application/json" -d '${JSON.stringify(payload).replace(/'/g, "'\\''")}'`;
+            console.log('[API] Comando Curl enviado al servidor:', curlCommand);
             console.log(`[API] Executing ${language} code...`);
             const response = await fetch(`${BASE_URL}/api/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, language, input })
+                body: JSON.stringify(payload)
             });
             const data = await response.json();
             console.log('[API] Server response:', data);
