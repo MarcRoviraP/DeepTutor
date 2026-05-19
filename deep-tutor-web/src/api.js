@@ -32,10 +32,11 @@ export const api = {
     
     getSessions: async (user_id) => {
         try {
-            // Fetch both conversations and exercises to show as "recent activity"
-            const [conversations, exercises] = await Promise.all([
+            // Fetch conversations, exercises progress, and all exercises in parallel
+            const [conversations, exercises, allExercises] = await Promise.all([
                 api.getConversations(user_id),
-                api.getExerciseProgress(user_id)
+                api.getExerciseProgress(user_id),
+                api.getExercises()
             ]);
 
             const sessions = [
@@ -47,15 +48,19 @@ export const api = {
                     type: "chat",
                     timestamp: new Date(c.started_at).getTime()
                 })),
-                ...exercises.map(e => ({
-                    id: e.id,
-                    title: `Ejercicio #${e.ejer_id}`,
-                    date: new Date(e.envio_send_time).toLocaleDateString(),
-                    duration: e.estado === 1 ? "Completado" : "Pendiente",
-                    type: "exercise",
-                    ejer_id: e.ejer_id,
-                    timestamp: new Date(e.envio_send_time).getTime()
-                }))
+                ...exercises.map(e => {
+                    const exerciseDetail = Array.isArray(allExercises) ? allExercises.find(ex => ex.id == e.ejer_id) : null;
+                    const exerciseName = exerciseDetail ? exerciseDetail.title : `#${e.ejer_id}`;
+                    return {
+                        id: e.id,
+                        title: `Ejercicio: ${exerciseName}`,
+                        date: new Date(e.envio_send_time).toLocaleDateString(),
+                        duration: e.estado === 1 ? "Completado" : "Pendiente",
+                        type: "exercise",
+                        ejer_id: e.ejer_id,
+                        timestamp: new Date(e.envio_send_time).getTime()
+                    };
+                })
             ];
 
             // Sort by most recent (descending) with safety fallbacks for invalid dates
