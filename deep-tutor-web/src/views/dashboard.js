@@ -1,5 +1,5 @@
 export const Dashboard = (data) => {
-    const { user, sessions, currentGoal } = data;
+    const { user, sessions, currentGoal, mostFrequentError } = data;
     
     // Fallback values for empty states
     const exercisesDone = user.stats?.exercisesDone || 0;
@@ -111,14 +111,26 @@ export const Dashboard = (data) => {
                     </button>
                 </div>
                 
-                <!-- Card de errores comunes (Opcional/Extra) -->
-                <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl flex items-center gap-4 opacity-80 hover:opacity-100 transition-opacity">
-                    <span class="material-symbols-outlined text-error">warning</span>
+                <!-- Card de errores comunes (Dinamico) -->
+                ${mostFrequentError ? `
+                <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl flex items-start gap-4 opacity-90 hover:opacity-100 transition-opacity">
+                    <span class="material-symbols-outlined text-error mt-0.5">warning</span>
                     <div class="flex-1">
-                        <p class="text-xs font-bold uppercase tracking-widest opacity-60">Área de mejora</p>
-                        <p class="text-sm font-bold">Conceptos de Herencia</p>
+                        <p class="text-xs font-bold uppercase tracking-widest text-error opacity-80">Área de mejora (${mostFrequentError.contador} ${mostFrequentError.contador === 1 ? 'detección' : 'detecciones'})</p>
+                        <p class="text-base font-black text-on-surface mt-1">${mostFrequentError.nombre}</p>
+                        <p class="text-xs text-on-surface-variant mt-2 leading-relaxed opacity-70">${mostFrequentError.descripcion || 'Tené cuidado con este patrón en tus ejecuciones.'}</p>
                     </div>
                 </div>
+                ` : `
+                <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl flex items-center gap-4 opacity-90 hover:opacity-100 transition-opacity">
+                    <span class="material-symbols-outlined text-success">check_circle</span>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold uppercase tracking-widest text-success opacity-80">Rendimiento</p>
+                        <p class="text-sm font-bold text-on-surface">¡Todo en orden, loco!</p>
+                        <p class="text-xs text-on-surface-variant mt-1 opacity-70">No registramos errores recurrentes. ¡Seguí así!</p>
+                    </div>
+                </div>
+                `}
             </section>
         </div>
     </div>

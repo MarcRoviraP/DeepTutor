@@ -57,11 +57,36 @@ export const api = {
                 }))
             ];
 
-            // Sort by most recent
-            return sessions.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+            // Sort by most recent (descending) with safety fallbacks for invalid dates
+            return sessions.sort((a, b) => {
+                const tA = isNaN(a.timestamp) ? 0 : a.timestamp;
+                const tB = isNaN(b.timestamp) ? 0 : b.timestamp;
+                return tB - tA;
+            }).slice(0, 5);
         } catch (error) {
             console.error('[API] Error fetching sessions:', error);
             return [];
+        }
+    },
+
+    getUserErrors: async (usuario_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/user_errors?usuario_id=eq.${usuario_id}`);
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Error fetching user errors:', error);
+            return [];
+        }
+    },
+
+    getErrorDetails: async (error_id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/errores_detectados?id=eq.${error_id}`);
+            const data = await response.json();
+            return Array.isArray(data) ? data[0] : data;
+        } catch (error) {
+            console.error('[API] Error fetching error details:', error);
+            return null;
         }
     },
 
@@ -70,12 +95,13 @@ export const api = {
         if (!user || !user.id) return { user, sessions: [], progress: null };
 
         try {
-            // Fetch stats and sessions in parallel
+            // Fetch stats, sessions, and errors in parallel
             console.log("[API] Fetching dashboard data for user:", user.id);
-            const [sessions, exerciseStats, userProgress] = await Promise.all([
+            const [sessions, exerciseStats, userProgress, userErrors] = await Promise.all([
                 api.getSessions(user.id),
                 fetch(`${BASE_URL}/api/user_ejer/stats?user_id=${user.id}`).then(res => res.json()),
-                fetch(`${BASE_URL}/api/progreso_usuario?usuario_id=eq.${user.id}&order=updated_at.desc&limit=1`).then(res => res.json())
+                fetch(`${BASE_URL}/api/progreso_usuario?usuario_id=eq.${user.id}&order=updated_at.desc&limit=1`).then(res => res.json()),
+                api.getUserErrors(user.id)
             ]);
 
             console.log("[API] Sessions Received:", sessions);
@@ -107,14 +133,37 @@ export const api = {
                 }
             }
 
+            let mostFrequentError = null;
+            if (Array.isArray(userErrors) && userErrors.length > 0) {
+                // Sort descending by contador
+                const sortedErrors = [...userErrors].sort((a, b) => (b.contador || 0) - (a.contador || 0));
+                const topError = sortedErrors[0];
+                if (topError && topError.error_id) {
+                    try {
+                        const details = await api.getErrorDetails(topError.error_id);
+                        if (details) {
+                            mostFrequentError = {
+                                nombre: details.nombre,
+                                descripcion: details.descripcion,
+                                tipo: details.tipo,
+                                contador: topError.contador
+                            };
+                        }
+                    } catch (e) {
+                        console.error('[API] Error resolving top error details:', e);
+                    }
+                }
+            }
+
             return {
                 user: { ...user, stats },
                 sessions,
-                currentGoal
+                currentGoal,
+                mostFrequentError
             };
         } catch (error) {
             console.error('[API] Error fetching dashboard data:', error);
-            return { user, sessions: [], currentGoal: null };
+            return { user, sessions: [], currentGoal: null, mostFrequentError: null };
         }
     },
     
@@ -299,6 +348,21 @@ export const api = {
             return data;
         } catch (error) {
             console.error('[API] Execution request failed:', error);
+            return { status: 'error', message: error.message };
+        }
+    },
+    
+    recordException: async (stderr, language, userId) => {
+        try {
+            console.log(`[API] Recording exception... User: ${userId}, Lang: ${language}`);
+            const response = await fetch(`${BASE_URL}/api/record_exception`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stderr, language, userId })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('[API] Record exception request failed:', error);
             return { status: 'error', message: error.message };
         }
     },

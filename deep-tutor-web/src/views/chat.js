@@ -110,8 +110,12 @@ export const Chat = (data) => {
                                         ${renderMarkdown(msg.mensaje)}
                                     </div>
                                     <div class="flex items-center justify-end gap-2 mt-2 opacity-40">
-                                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">Usuario</p>
-                                        <span class="material-symbols-outlined text-xs">person</span>
+                                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">${user.nombre || user.name || 'Usuario'}</p>
+                                        ${user.picture ? `
+                                            <img src="${user.picture}" alt="Usuario" class="w-4 h-4 rounded-full object-cover">
+                                        ` : `
+                                            <span class="material-symbols-outlined text-xs">person</span>
+                                        `}
                                     </div>
                                 </div>
                             </div>
@@ -439,8 +443,12 @@ window.initChat = (chatHistory = []) => {
                         ${renderMarkdown(message)}
                     </div>
                     <div class="flex items-center justify-end gap-2 mt-2 opacity-40">
-                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">Usuario</p>
-                        <span class="material-symbols-outlined text-xs">person</span>
+                        <p class="text-[9px] font-bold uppercase tracking-widest text-right">${user.nombre || user.name || 'Usuario'}</p>
+                        ${user.picture ? `
+                            <img src="${user.picture}" alt="Usuario" class="w-4 h-4 rounded-full object-cover">
+                        ` : `
+                            <span class="material-symbols-outlined text-xs">person</span>
+                        `}
                     </div>
                 </div>
             </div>
